@@ -1,0 +1,50 @@
+{DEFECT} - {STORY} - {SHORT DESCRIPTION}
+
+{CHARM} - {SHORT DESCRIPTION}
+---------- {TRANSPORT} ----------
+({OBJECTTYPE})
+  {OBJECTNAME}
+    Description:
+      {DESCRIPTION}
+    Attachments:
+      {FILENAME}
+
+  Z_EWM_RF_RECEIVE_EXTRACT_HU
+    Description:
+      Changed the HU_READ to HU_READ_MULTI to allow for X-HU PO list
+      building.
+    Attachments:
+      9000011387-Z_EWM_RF_RECEIVE_EXTRACT_HU.txt
+
+  Z_EWM_RF_RECEIVE_HU_PTA_NOW
+    Description:
+      Added logic to allow GR and creation of TOs for X-HUs.
+      Previously it would cause an error if more than one HU was
+      contained in CT_PACKING.
+    Change Log:
+      9000011387-Z_EWM_RF_RECEIVE_HU_PTA_NOW.txt
+
+
+{CHARM02} - {SHORT DESCRIPTION}
+---------- {TRANSPORT} ----------
+({OBJECTTYPE})
+  {OBJECTNAME}
+  - Description:
+      {DESCRIPTION}
+  - Change Log:
+      {FILENAME}
+
+  Z_EWM_RF_RECEIVE_EXTRACT_HU
+  - Description:
+      Changed the HU_READ to HU_READ_MULTI to allow for X-HU PO list
+      building.
+  - Change Log:
+      9000011387-Z_EWM_RF_RECEIVE_EXTRACT_HU.txt
+
+  Z_EWM_RF_RECEIVE_HU_PTA_NOW
+  - Description:
+      Added logic to allow GR and creation of TOs for X-HUs.
+      Previously it would cause an error if more than one HU was
+      contained in CT_PACKING.
+  - Change Log:
+      9000011387-Z_EWM_RF_RECEIVE_HU_PTA_NOW.txt
