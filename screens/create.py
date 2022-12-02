@@ -56,11 +56,19 @@ class ParentEntry(base.ParentEntry):
 	def submit(self,event=None):
 		''' submit button event handler '''
 		story = self.ent_story.get()
+		charm = self.ent_charm.get()
 		descr = self.ent_descr.get()
 
 		self.master.stories.append({'parent':self.master.parent,
 																'story':story,
 																'description':descr})
+
+		charms = [item['charm'] for item in self.master.charms]
+		if charm not in charms:
+			# add new charm & transport to master list
+			self.master.charms.append({'story':story,
+																 'charm':charm,
+																 'description':descr})
 
 		self.master.parent_records.add_story()
 		self.cancel()
@@ -68,6 +76,7 @@ class ParentEntry(base.ParentEntry):
 	def cancel(self):
 		''' cancel '''
 		self.ent_story.delete(0,'end')
+		self.ent_charm.delete(0,'end')
 		self.ent_descr.delete(0,'end')
 		self.wm_withdraw()
 
@@ -91,12 +100,13 @@ class ParentRecords(base.ParentRecords):
 			for item in self.window.winfo_children():
 				item.destroy()
 				
-			for item in self.master.stories:
+			for item in self.master.charms:
 				# row for table
 				row = tk.Frame(self.window)
 
 				# story & description
 				lbl_story = tk.Label(row,text=item['story'],width=10,anchor='w')
+				lbl_charm = tk.Label(row,text=item['charm'],width=10,anchor='w')
 				lbl_descr = tk.Label(row,text=item['description'],width=40,anchor='w')
 
 				# config
@@ -107,7 +117,8 @@ class ParentRecords(base.ParentRecords):
 				# grid
 				row.grid(row=self.row_index,column=0,pady=(2,0),sticky='w')
 				lbl_story.grid(row=0,column=0,padx=(5,0))
-				lbl_descr.grid(row=0,column=1)
+				lbl_charm.grid(row=0,column=1)
+				lbl_descr.grid(row=0,column=2)
 
 				self.row_index = self.row_index + 1
 
@@ -127,34 +138,6 @@ class ParentRecords(base.ParentRecords):
 			#self.add_story()
 			#self.canvas.configure(height=50)
 
-		def modify_display(self,event=None):
-			''' modify display '''
-			# validate fields are filled & follow naming conv.
-			if True == True:
-			#if self.master.validation.validate_parent_data(self.ent_parent.get(),
-			#																								self.ent_story.get(),
-			#																								self.ent_p_descr.get()):
-				# set parent and lock entry
-				self.ent_parent.configure(state='disabled')
-				self.master.parent = self.ent_parent.get()
-
-				story = None
-				description = None
-				descriptions = [story['description'] for story in self.master.stories]
-
-				# get a list of stories that have been entered, add to master list
-				self.master.stories.clear()
-				for item in self.window.winfo_children():
-					for row in item.winfo_children():
-						if row.name == 'story':
-							story = row['text']
-						elif row.name == 'descr':
-							descr = row['text']
-						print(item.winfo_children())
-					self.master.stories.append({'parent':self.master.parent,
-																			'story':story,
-																			'description':descr})
-
 		def set_scroll(self,event=None):
 			''' set the scroll region based of the amount of entries '''
 			bbox = self.canvas.bbox('all')
@@ -171,7 +154,6 @@ class ChangeEntry(base.ChangeEntry):
 
 	def submit(self,event):
 		''' top level submit event '''
-		story = self.v_story.get()
 		charm = self.ent_charm.get()
 		trans = self.ent_trans.get()
 		descr = self.ent_descr.get()
@@ -184,13 +166,6 @@ class ChangeEntry(base.ChangeEntry):
 		if True == True:
 		#if self.master.validation.validate_charm_and_tran(charm,trans,descr):
 
-			charms = [item['charm'] for item in self.master.charms]
-			if charm not in charms:
-				# add new charm & transport to master list
-				self.master.charms.append({'story':story,
-																	 'charm':charm,
-																	 'description':descr})
-
 			self.master.transports.append({'story':story,
 																		 'transport':trans,
 																		 'charm':charm,
@@ -202,17 +177,16 @@ class ChangeEntry(base.ChangeEntry):
 	def cancel(self,event=None):
 		''' top cancel '''
 		self.wm_withdraw()
-		self.v_story.set('Select a Story')
-		self.ent_charm.delete(0,'end')
+		self.v_charm.set('Select a Charm')
 		self.ent_trans.delete(0,'end')
 		self.ent_descr.delete(0,'end')
 
 	def new_change(self):
 		''' new change '''
-		stories = [item['story'] for item in self.master.stories]
-		self.opt_story['menu'].delete(0,'end')
-		for item in stories:
-			self.opt_story['menu'].add_command(label=item,command=tk._setit(self.v_story,item))
+		charms = [item['charm'] for item in self.master.charms]
+		self.opt_charm['menu'].delete(0,'end')
+		for item in charms:
+			self.opt_charm['menu'].add_command(label=item,command=tk._setit(self.v_charm,item))
 		x = self._root().winfo_x()
 		y = self._root().winfo_y()
 		self.geometry("+%d+%d" %(x+200,y+200))
@@ -224,7 +198,6 @@ class ChangeRecords(base.ChangeRecords):
 
 	def add(self,event):
 		''' add charm & transport '''
-		#self.window = tk.Toplevel(self._root())
 		self.master.change_entry.new_change()
 
 	def remove(self,event):
@@ -246,14 +219,12 @@ class ChangeRecords(base.ChangeRecords):
 		self.reset_fields()
 		for item in self.master.transports:
 			# objects
-			lbl_story = tk.Label(self.charms,anchor='w',width=10,text=item['story'])
 			lbl_charm = tk.Label(self.charms,anchor='w',width=10,text=item['charm'])
 			lbl_trans = tk.Label(self.charms,anchor='w',width=10,text=item['transport'])
 			lbl_descr = tk.Label(self.charms,anchor='w',width=40,text=item['description'])
-			lbl_story.grid(row=self.row_index,column=0,padx=5)
-			lbl_charm.grid(row=self.row_index,column=1,padx=5)
-			lbl_trans.grid(row=self.row_index,column=2,padx=5)
-			lbl_descr.grid(row=self.row_index,column=3,padx=5)
+			lbl_charm.grid(row=self.row_index,column=0,padx=5)
+			lbl_trans.grid(row=self.row_index,column=1,padx=5)
+			lbl_descr.grid(row=self.row_index,column=2,padx=5)
 
 			self.row_index = self.row_index + 1
 
@@ -282,30 +253,31 @@ class ObjectEntry(base.ObjectEntry):
 			#																						 objectType,
 			#																						 objectName,
 			#																						 description):
-				objectId = self.master.object_records.cur_sel
-				if objectId or objectId == 0:
-				# add this to the validation class
-					for item in self.master.objects:
-						if item['objectId'] == objectId:
-							alert = messagebox.askyesno('Info','Object is already created in session. Overwrite?')
-							if alert == True:
-								item['transport'] = transport
-								item['objectType'] = objectType
-								item['objectName'] = objectName
-								item['description'] = description
+				if self.master.object_records.sel_row:
+					objectId = self.master.object_records.sel_row.id
+					if objectId or objectId == 0:
+					# add this to the validation class
+						for item in self.master.objects:
+							if item['objectId'] == objectId:
+								alert = messagebox.askyesno('Warning','Overwrite Entry?')
+								if alert == True:
+									item['transport'] = transport
+									item['objectType'] = objectType
+									item['objectName'] = objectName
+									item['description'] = description
 
-								for file in self.master.files:
-									if objectId == file['objectId']:
-										file['transport'] = transport
-										file['objectName'] = objectName
+									for file in self.master.files:
+										if objectId == file['objectId']:
+											file['transport'] = transport
+											file['objectName'] = objectName
 
-								self.master.file_records.add_file_to_view()
-								self.master.object_records.add_obj_to_view()
-								self.master.object_records.cur_sel = None
-								self.close_window()
-								return
-							else:
-								return
+									self.master.file_records.add_file_to_view()
+									self.master.object_records.add_obj_to_view()
+									self.master.object_records.sel_row = None
+									self.close_window()
+									return
+								else:
+									return
 
 				# add created objects to master dict
 				self.master.objects.append({'objectId':self.object_id,
@@ -319,7 +291,7 @@ class ObjectEntry(base.ObjectEntry):
 					#self.master.object_records.grid(row=4,padx=10,pady=5,sticky='nsew')
 				self.master.file_records.add_file_to_view()
 				self.master.object_records.add_obj_to_view(self.object_id)
-				self.master.object_records.cur_sel = None
+				self.master.object_records.sel_row = None
 				self.object_id = self.object_id + 1
 
 			self.close_window()
@@ -413,20 +385,27 @@ class ObjectRecords(base.ObjectRecords):
 
 		def sel_obj(self,event):
 			''' select object '''
-			if self.cur_sel == event.widget.id:
-				self.cur_sel = None
+			objectId = event.widget.id
+
+			if self.sel_row:
+				if self.sel_row.id == objectId:
+					self.sel_row = None
+				else:
+					self.sel_row = event.widget
 			else:
-				self.cur_sel = event.widget.id
+				self.sel_row = event.widget
+
 			for item in self.main.winfo_children():
 				for row in item.winfo_children():
 					if '!checkbutton' in str(row):
-						if event.widget.id != row.id:
-							row.deselect()
+						if self.sel_row:
+							if self.sel_row.id != row.id:
+								row.deselect()
 
 		def remove_obj_from_view(self,objectId):
 			''' remove object from view '''
 			# get the selected object
-			objectId = self.cur_sel
+			objectId = self.sel_row.id
 			if objectId or objectId == 0:
 				# remove selected from object & file master lists
 				[self.master.objects.remove(obj) for obj in self.master.objects if obj['objectId'] == objectId]
@@ -449,11 +428,11 @@ class ObjectRecords(base.ObjectRecords):
 
 		def edit_entry(self,event=None):
 			''' edit entry '''
-			if self.cur_sel or self.cur_sel == 0:
+			if self.sel_row or self.sel_row == 0:
 				self.master.object_entry.new_object()
 				self.master.object_entry.grab_set()
 				for item in self.main.winfo_children():
-					if item.id == self.cur_sel:
+					if item.id == self.sel_row:
 						for row in item.winfo_children():
 							if row.name == 'transport':
 								self.master.object_entry.v_trans.set(row['text'])
@@ -617,6 +596,27 @@ class FileRecords(base.FileRecords):
 			self.update_idletasks()
 			self.set_scroll()
 
+		def select_file(self,event=None):
+			objectId = event.widget.id
+			fileName = event.widget.name
+
+			if self.sel_row:
+				if self.sel_row.id == objectId and self.sel_row.name == fileName:
+					self.sel_row = None
+				else:
+					self.sel_row = event.widget
+			else:
+				self.sel_row = event.widget
+
+			for item in self.main.winfo_children():
+				for row in item.winfo_children():
+					if '!checkbutton' in str(row):
+						if self.sel_row:
+							if self.sel_row.id == row.id and self.sel_row.name == row.name:
+								pass
+							else:
+								row.deselect()
+
 		def remove_file(self,objectId=None,event=None):
 			''' remove file '''
 			if objectId or objectId == 0:
@@ -675,6 +675,30 @@ class MainButtons(base.MainButtons):
 		''' save log '''
 
 		# add logic to update parent table 
+		if True == True:
+		#if self.master.validation.validate_parent_data(self.ent_parent.get(),
+		#																								self.ent_story.get(),
+		#																								self.ent_p_descr.get()):
+			# set parent and lock entry
+			self.master.parent_records.ent_parent.configure(state='disabled')
+			self.master.parent = self.ent_parent.get()
+
+			story = None
+			description = None
+			descriptions = [story['description'] for story in self.master.stories]
+
+			# get a list of stories that have been entered, add to master list
+			self.master.stories.clear()
+			for item in self.master.parent_records.window.winfo_children():
+				for row in item.winfo_children():
+					if row.name == 'story':
+						story = row['text']
+					elif row.name == 'descr':
+						descr = row['text']
+
+				self.master.stories.append({'parent':self.master.parent,
+																		'story':story,
+																		'description':descr})
 
 		# validate no unsaved data
 		if self.master.object_entry.ent_obj.get():
@@ -699,7 +723,6 @@ class MainButtons(base.MainButtons):
 		# update story table
 		#list_stories = [item for item in self.master.stories]
 		stories = [list(item.values()) for item in self.master.stories]
-		print('stories:', stories)
 		if stories:
 			for item in stories:
 				result = self.master.db_conn.insert_table('story',item)
@@ -726,7 +749,6 @@ class MainButtons(base.MainButtons):
 			
 		# update files table
 		files = [list(item.values()) for item in self.master.files]
-		print('files:', files)
 		if files:
 			for item in files:
 				del item[6]
@@ -737,7 +759,6 @@ class MainButtons(base.MainButtons):
 				
 		# update charm table
 		charms = [list(item.values()) for item in self.master.charms]
-		print('charms:', charms)
 		if charms:
 			for item in charms:
 				result = self.master.db_conn.insert_table('charm',[self.master.parent,item[0],item[1],item[2]])
@@ -747,7 +768,6 @@ class MainButtons(base.MainButtons):
 					
 		# update transport tables
 		transports = [list(item.values()) for item in self.master.transports]
-		print('transports:', transports)
 		if transports:
 			for item in transports:
 				result = self.master.db_conn.insert_table('transport',item[1:4])
@@ -757,7 +777,6 @@ class MainButtons(base.MainButtons):
 
 		# update object table
 		objects = [list(item.values()) for item in self.master.objects]
-		print('objects:', objects)
 		if objects:
 			for item in objects:
 				result = self.master.db_conn.insert_table('object',item)

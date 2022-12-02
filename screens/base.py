@@ -111,8 +111,10 @@ class ParentEntry(tk.Toplevel):
 
     # self.main objects
     self.lbl_story  = tk.Label(self.main,text='Story')
+    self.lbl_charm = tk.Label(self.main,text='Charm')
     self.lbl_descr  = tk.Label(self.main,text='Description')
     self.ent_story  = tk.Entry(self.main)
+    self.ent_charm  = tk.Entry(self.main)
     self.ent_descr  = tk.Entry(self.main)
 
     # config
@@ -142,8 +144,10 @@ class ParentEntry(tk.Toplevel):
     # self.main
     self.lbl_story.grid(row=0,column=0,padx=5,pady=(5,0),sticky='e')
     self.ent_story.grid(row=0,column=1,padx=5,pady=(5,0),sticky='w')
-    self.lbl_descr.grid(row=1,column=0,padx=5,sticky='e')
-    self.ent_descr.grid(row=1,column=1,padx=5,pady=1,sticky='w')
+    self.lbl_charm.grid(row=1,column=0,padx=5,sticky='e')
+    self.ent_charm.grid(row=1,column=1,padx=5,pady=1,sticky='w')
+    self.lbl_descr.grid(row=2,column=0,padx=5,sticky='e')
+    self.ent_descr.grid(row=2,column=1,padx=5,pady=1,sticky='w')
 
   def submit(self,event=None):
     ''' submit button event handler '''
@@ -176,7 +180,6 @@ class ParentRecords(tk.Frame):
       self.btn_bar = tk.Frame(self.header)
 
       # self.btn_bar objects
-      self.btn_submit    = tk.Button(self.btn_bar,text='Submit')
       self.btn_new_story = tk.Button(self.btn_bar,text='New Story')
 
       # self.main objects
@@ -192,6 +195,7 @@ class ParentRecords(tk.Frame):
 
       # self.header_story objects
       self.h_lbl_story = tk.Label(self.header_story,text='Story')
+      self.h_lbl_charm = tk.Label(self.header_story,text='Charm')
       self.h_lbl_descr = tk.Label(self.header_story,text='Description')
 
       # self.main_story objects
@@ -205,11 +209,11 @@ class ParentRecords(tk.Frame):
       self.header.configure(bg='dark gray',borderwidth=2,relief='ridge')
       self.title.configure(bg='dark gray',fg='black',font=('Arial',12,'bold'))
       self.btn_bar.configure(bg='dark gray')
-      self.btn_submit.configure(font=('Arial',8))
       self.btn_new_story.configure(font=('Arial',8),pady=0)
       self.main.configure(borderwidth=2,relief='groove')
       self.header_story.configure(bg='light gray')
       self.h_lbl_story.configure(bg='light gray',width=10,anchor='w')
+      self.h_lbl_charm.configure(bg='light gray',width=10,anchor='w')
       self.h_lbl_descr.configure(bg='light gray',width=40,anchor='w')
       self.ent_p_descr.configure(width=50)
       self.canvas.configure(height=70,yscrollcommand=self.vscroll.set)
@@ -217,7 +221,6 @@ class ParentRecords(tk.Frame):
 
       # events
       self.btn_new_story.bind('<Button-1>',self.new_story)
-      self.btn_submit.bind('<Button-1>',self.modify_display)
 
       # self grid
       self.header.grid(row=0,column=0,sticky='nsew')
@@ -228,8 +231,7 @@ class ParentRecords(tk.Frame):
       self.btn_bar.grid(row=0,column=1,padx=2,pady=4)
 
       # self.btn_bar grid
-      self.btn_submit.grid(row=0,column=0,padx=(5,2),pady=0)
-      self.btn_new_story.grid(row=0,column=1,padx=2)
+      self.btn_new_story.grid(row=0,column=0,padx=(5,2),pady=0)
 
       # self.main grid
       self.main_parent.grid(row=0,column=0,sticky='w')
@@ -244,7 +246,8 @@ class ParentRecords(tk.Frame):
 
       # self.header_story grid
       self.h_lbl_story.grid(row=0,column=0,padx=(5,0))
-      self.h_lbl_descr.grid(row=0,column=1)
+      self.h_lbl_charm.grid(row=0,column=1)
+      self.h_lbl_descr.grid(row=0,column=2)
 
       # self.main_story grid
       self.canvas.grid(row=0,column=0)
@@ -262,10 +265,6 @@ class ParentRecords(tk.Frame):
       ''' reset fields '''
       pass
 
-    def modify_display(self,event=None):
-      ''' modify display '''
-      pass
-
     def set_scroll(self,event=None):
       ''' set the scroll region based of the amount of entries '''
       pass
@@ -280,7 +279,7 @@ class ChangeEntry(tk.Toplevel):
     self.wm_withdraw()
     self.protocol('WM_DELETE_WINDOW',self.cancel)
 
-    self.v_story = tk.StringVar()
+    self.v_charm = tk.StringVar()
 
     self.header = tk.Frame(self)
     self.main = tk.Frame(self)
@@ -289,12 +288,12 @@ class ChangeEntry(tk.Toplevel):
     self.btn_bar = tk.Frame(self.header)
 
     # window objects
-    self.lbl_story  = tk.Label(self.main,text='Story')
+    #self.lbl_story  = tk.Label(self.main,text='Story')
     self.lbl_charm  = tk.Label(self.main,text='Charm')
     self.lbl_trans  = tk.Label(self.main,text='Transport')
     self.lbl_descr  = tk.Label(self.main,text='Description')
-    self.opt_story = tk.OptionMenu(self.main,self.v_story,'Select a Story',*[])
-    self.ent_charm  = tk.Entry(self.main)
+    #self.opt_story = tk.OptionMenu(self.main,self.v_story,'Select a Story',*[])
+    self.opt_charm  = tk.OptionMenu(self.main,self.v_charm,'Select a Charm',*[])
     self.ent_trans  = tk.Entry(self.main)
     self.ent_descr  = tk.Entry(self.main)
     self.btn_submit = tk.Button(self.btn_bar,text='Submit')
@@ -307,7 +306,8 @@ class ChangeEntry(tk.Toplevel):
     self.title.configure(bg='dark gray',fg='black',font=('Arial',12,'bold'))
     self.btn_submit.bind('<Button-1>',self.submit)
     self.btn_cancel.bind('<Button-1>',self.cancel)
-    self.v_story.set('Select a Story')
+    #self.v_story.set('Select a Story')
+    self.v_charm.set('Select a Charm')
 
     self.header.grid(row=0,column=0,sticky='nsew')
     self.main.grid(row=1,column=0,sticky='nsew')
@@ -316,14 +316,14 @@ class ChangeEntry(tk.Toplevel):
     self.btn_bar.grid(row=0,column=1,padx=2,pady=5)
 
     # grid
-    self.lbl_story.grid(row=0,column=0,padx=5,pady=(5,0),sticky='e')
-    self.opt_story.grid(row=0,column=1,padx=5,pady=(5,0),sticky='w')
-    self.lbl_charm.grid(row=1,column=0,padx=5,sticky='e')
-    self.ent_charm.grid(row=1,column=1,padx=5,pady=1,sticky='w')
-    self.lbl_trans.grid(row=2,column=0,padx=5,sticky='ne')
-    self.ent_trans.grid(row=2,column=1,padx=5,pady=2,sticky='w')
-    self.lbl_descr.grid(row=3,column=0,padx=5,pady=(0,5),sticky='ne')
-    self.ent_descr.grid(row=3,column=1,padx=5,pady=(0,5),sticky='w')
+   # self.lbl_story.grid(row=0,column=0,padx=5,pady=(5,0),sticky='e')
+    #self.opt_story.grid(row=0,column=1,padx=5,pady=(5,0),sticky='w')
+    self.lbl_charm.grid(row=0,column=0,padx=5,pady=(5,0),sticky='e')
+    self.opt_charm.grid(row=0,column=1,padx=5,pady=(5,0),sticky='w')
+    self.lbl_trans.grid(row=1,column=0,padx=5,sticky='ne')
+    self.ent_trans.grid(row=1,column=1,padx=5,pady=2,sticky='w')
+    self.lbl_descr.grid(row=2,column=0,padx=5,pady=(0,5),sticky='ne')
+    self.ent_descr.grid(row=2,column=1,padx=5,pady=(0,5),sticky='w')
     self.btn_submit.grid(row=0,column=0,padx=(5,2))
     self.btn_cancel.grid(row=0,column=2,padx=2)
 
@@ -372,7 +372,7 @@ class ChangeRecords(tk.Frame):
     self.btn_rem = tk.Button(self.btn_bar,text='Remove')
 
     # self.main_header objects
-    self.lbl_h_story = tk.Label(self.main_header,anchor='w',width=10,bg='light gray',text='Story')
+    #self.lbl_h_story = tk.Label(self.main_header,anchor='w',width=10,bg='light gray',text='Story')
     self.lbl_h_charm = tk.Label(self.main_header,anchor='w',width=10,bg='light gray',text='Charm')
     self.lbl_h_trans = tk.Label(self.main_header,anchor='w',width=10,bg='light gray',text='Transport')
     self.lbl_h_descr = tk.Label(self.main_header,anchor='w',width=40,bg='light gray',text='Description')
@@ -405,10 +405,10 @@ class ChangeRecords(tk.Frame):
     #self.btn_rem.grid(row=0,column=1)
 
     # self.main_header grid
-    self.lbl_h_story.grid(row=0,column=0,padx=(6,5))
-    self.lbl_h_charm.grid(row=0,column=1,padx=5)
-    self.lbl_h_trans.grid(row=0,column=2,padx=5)
-    self.lbl_h_descr.grid(row=0,column=3,padx=5)
+    #self.lbl_h_story.grid(row=0,column=0,padx=(6,5))
+    self.lbl_h_charm.grid(row=0,column=0,padx=(6,5))
+    self.lbl_h_trans.grid(row=0,column=1,padx=5)
+    self.lbl_h_descr.grid(row=0,column=2,padx=5)
 
   def add(self,event):
     ''' add charm & transport '''

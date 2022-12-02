@@ -1,5 +1,5 @@
 import sqlite3
-	
+
 '''
 	db/sql.py
 '''

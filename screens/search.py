@@ -222,6 +222,7 @@ class SearchOptions(base.SearchOptions):
 																		'dFileCont':''})
 
 		# set the display
+		self.master.parent_records.ent_parent.configure(state='disabled')
 		self.master.parent_records.add_story()
 		self.master.change_records.set_display()
 		self.master.file_records.add_file_to_view()
@@ -250,6 +251,7 @@ class ParentEntry(base.ParentEntry):
 	def submit(self,event=None):
 		''' submit button event handler '''
 		story = self.ent_story.get()
+		charm = self.ent_charm.get()
 		descr = self.ent_descr.get()
 
 		self.master.stories.append({'parent':self.master.parent,
@@ -261,12 +263,26 @@ class ParentEntry(base.ParentEntry):
 																'description':descr,
 																'delta':'+'})
 
+		charms = [item['charm'] for item in self.master.charms]
+		if charm not in charms:
+			# add new charm & transport to master list
+			self.master.charms.append({'story':story,
+																 'charm':charm,
+																 'description':descr})
+
+			self.master.delta_charm.append({'parent':self.master.parent,
+																			'story':story,
+																			'charm':charm,
+																			'descr':descr,
+																			'delta':'+'})
+
 		self.master.parent_records.add_story()
 		self.cancel()
 
 	def cancel(self):
 		''' cancel '''
 		self.ent_story.delete(0,'end')
+		self.ent_charm.delete(0,'end')
 		self.ent_descr.delete(0,'end')
 		self.wm_withdraw()
 
@@ -290,12 +306,13 @@ class ParentRecords(base.ParentRecords):
 			for item in self.window.winfo_children():
 				item.destroy()
 
-			for item in self.master.stories:
+			for item in self.master.charms:
 				# row for table
 				row = tk.Frame(self.window)
 
 				# story & description
 				lbl_story = tk.Label(row,text=item['story'],width=10,anchor='w')
+				lbl_charm = tk.Label(row,text=item['charm'],width=10,anchor='w')
 				lbl_descr = tk.Label(row,text=item['description'],width=40,anchor='w')
 
 				# config
@@ -306,12 +323,11 @@ class ParentRecords(base.ParentRecords):
 				# grid
 				row.grid(row=self.row_index,column=0,pady=(2,0),sticky='w')
 				lbl_story.grid(row=0,column=0,padx=(5,0))
-				lbl_descr.grid(row=0,column=1)
+				lbl_charm.grid(row=0,column=1)
+				lbl_descr.grid(row=0,column=2)
 
 				self.row_index = self.row_index + 1
 
-			#if 'Configure' not in str(event):
-				#self.canvas.configure(height=95)
 			self.update_idletasks()
 			self.set_scroll()
 			self.canvas.unbind('<Configure>')
@@ -327,55 +343,6 @@ class ParentRecords(base.ParentRecords):
 				item.destroy()
 			self.add_story()
 			self.canvas.configure(height=50)
-
-		def modify_display(self,event=None):
-			''' modify display '''
-			# validate fields are filled & follow naming conv.
-			if True == True:
-			#if self.master.validation.validate_parent_data(self.ent_parent.get(),
-			#																								self.ent_story.get(),
-			#																								self.ent_p_descr.get()):
-				self.ent_parent.configure(state='disabled')
-				if self.ent_p_descr != self.master.parent_desc:
-					self.master.delta_parent.clear()
-					self.master.delta_parent.append({'parent':self.master.parent,
-																					 'descr':self.ent_p_descr.get()})
-				story = None
-				description = None
-				descriptions = [story['description'] for story in self.master.stories]
-
-				# get a list of stories that have been entered, add to master list
-				self.master.stories.clear()
-				for item in self.window.winfo_children():
-					if '!frame' in str(item):
-						for i in item.winfo_children():
-							if '!label' in str(i):
-								if i.name == 'story':
-									story = i['text']
-								if i.name == 'descr':
-									description = i['text']
-							elif '!button' in str(i):
-								i.destroy()
-						self.master.stories.append({'parent':self.master.parent,
-																				'story':story,
-																				'description':description})
-						if self.master.db_conn.select_table('story','story',story).fetchone():
-							if description not in descriptions:
-								for item in self.master.delta_stories:
-									if item['story'] == story:
-										del self.master.delta_stories[self.master.delta_stories.index(item)]
-								self.master.delta_stories.append({'parent':self.master.parent,
-																									'story':story,
-																									'description':description,
-																									'delta':'*'})
-						else:
-							for item in self.master.delta_stories:
-								if item['story'] == story:
-									del self.master.delta_stories[self.master.delta_stories.index(item)]
-							self.master.delta_stories.append({'parent':self.master.parent,
-																								'story':story,
-																								'description':description,
-																								'delta':'+'})
 
 		def set_scroll(self,event=None):
 			''' set the scroll region based of the amount of entries '''
@@ -393,7 +360,7 @@ class ChangeEntry(base.ChangeEntry):
 
 	def submit(self,event):
 		''' top level submit event '''
-		story = self.v_story.get()
+		#story = self.v_story.get()
 		charm = self.ent_charm.get()
 		trans = self.ent_trans.get()
 		descr = self.ent_descr.get()
@@ -405,19 +372,6 @@ class ChangeEntry(base.ChangeEntry):
 
 		if True == True:
 		#if self.master.validation.validate_charm_and_tran(charm,trans,descr):
-
-			charms = [item['charm'] for item in self.master.charms]
-			if charm not in charms:
-				# add new charm & transport to master list
-				self.master.charms.append({'story':story,
-																	 'charm':charm,
-																	 'description':descr})
-
-				self.master.delta_charm.append({'parent':self.master.parent,
-																				'story':story,
-																				'charm':charm,
-																				'descr':descr,
-																				'delta':'+'})
 
 			self.master.transports.append({'story':story,
 																		 'transport':trans,
@@ -435,17 +389,16 @@ class ChangeEntry(base.ChangeEntry):
 	def cancel(self,event=None):
 		''' top cancel '''
 		self.wm_withdraw()
-		self.v_story.set('Select a Story')
-		self.ent_charm.delete(0,'end')
+		self.v_charm.set('Select a Charm')
 		self.ent_trans.delete(0,'end')
 		self.ent_descr.delete(0,'end')
 
 	def new_change(self):
 		''' new change '''
-		stories = [item['story'] for item in self.master.stories]
-		self.opt_story['menu'].delete(0,'end')
-		for item in stories:
-			self.opt_story['menu'].add_command(label=item,command=tk._setit(self.v_story,item))
+		charms = [item['charm'] for item in self.master.charms]
+		self.opt_charm['menu'].delete(0,'end')
+		for item in charms:
+			self.opt_charm['menu'].add_command(label=item,command=tk._setit(self.v_charm,item))
 		x = self._root().winfo_x()
 		y = self._root().winfo_y()
 		self.geometry("+%d+%d" %(x+200,y+200))
@@ -477,14 +430,12 @@ class ChangeRecords(base.ChangeRecords):
 		''' add items to the parent and charm/transport view '''
 		self.reset_fields()
 		for item in self.master.transports:
-			lbl_story = tk.Label(self.charms,anchor='w',width=10,text=item['story'])
 			lbl_charm = tk.Label(self.charms,anchor='w',width=10,text=item['charm'])
 			lbl_trans = tk.Label(self.charms,anchor='w',width=10,text=item['transport'])
 			lbl_descr = tk.Label(self.charms,anchor='w',width=40,text=item['description'])
-			lbl_story.grid(row=self.row_index,column=0,padx=5)
-			lbl_charm.grid(row=self.row_index,column=1,padx=5)
-			lbl_trans.grid(row=self.row_index,column=2,padx=5)
-			lbl_descr.grid(row=self.row_index,column=3,padx=5)
+			lbl_charm.grid(row=self.row_index,column=0,padx=5)
+			lbl_trans.grid(row=self.row_index,column=1,padx=5)
+			lbl_descr.grid(row=self.row_index,column=2,padx=5)
 
 			self.row_index = self.row_index + 1
 
@@ -557,19 +508,26 @@ class ObjectRecords(base.ObjectRecords):
 
 	def sel_obj(self,event=None):
 		''' move selected object to the entry view '''
-		if self.sel_row.id == event.widget.id:
-			self.sel_row = None
+		objectId = event.widget.id
+
+		if self.sel_row:
+			if self.sel_row.id == objectId:
+				self.sel_row = None
+			else:
+				self.sel_row = event.widget
 		else:
 			self.sel_row = event.widget
+
 		for item in self.main.winfo_children():
 			for row in item.winfo_children():
 				if '!checkbutton' in str(row):
-					if event.widget.id != row.id:
-						row.deselect()
+					if self.sel_row:
+						if self.sel_row.id != row.id:
+							row.deselect()
 
 	def remove_obj_from_view(self,objectId):
 		''' remove the object and file from the views, update deltas '''
-		objectId = self.master.object_records.sel_row.id
+		objectId = self.sel_row.id
 		if objectId or objectId == 0:
 
 			# object table delta updates
@@ -642,65 +600,66 @@ class ObjectEntry(base.ObjectEntry):
 		#																						 objectType,
 		#																						 objectName,
 		#																						 description):
-			objectId = self.master.object_records.sel_row.id
-			if objectId or objectId == 0:
-				for item in self.master.objects:
-					if item['objectId'] == objectId:
-						alert = messagebox.askyesno('Warning','Overwrite Entry?')
-						if alert == True:
-							item['transport'] = transport
-							item['objectType'] = objectType
-							item['objectName'] = objectName
-							item['description'] = description
-
-						# update delta (*)
-							delta = '*'
-							if self.master.delta_object:
-								for row in self.master.delta_object:
-									if row['objectId'] == item['objectId'] and row['delta'] != '+':
-										if self.master.db_conn.select_table('object','object_id',str(row['objectId'])).fetchone():
-											delta = '*'
-										else:
-											delta = '+'
-									else:
-										delta = '+'
-										self.master.delta_object.remove(row)
-
-							self.master.delta_object.append({'objectId':item['objectId'],
-																							 'transport':transport,
-																							 'objectType':objectType,
-																							 'objectName':objectName,
-																							 'description':description,
-																							 'delta':'{}'.format(delta)})
-							for file in self.master.files:
-								if objectId == file['objectId']:
-									file['transport'] = transport
-									file['objectName'] = objectName
+			if self.master.object_records.sel_row:
+				objectId = self.master.object_records.sel_row.id
+				if objectId or objectId == 0:
+					for item in self.master.objects:
+						if item['objectId'] == objectId:
+							alert = messagebox.askyesno('Warning','Overwrite Entry?')
+							if alert == True:
+								item['transport'] = transport
+								item['objectType'] = objectType
+								item['objectName'] = objectName
+								item['description'] = description
 
 							# update delta (*)
-							delta = '*'
-							if self.master.delta_files:
-								for row in self.master.delta_files:
-									if row['objectId'] == objectId and row['delta'] != '+':
-										if self.master.db_conn.select_table('files','object_id',str(row['objectId'])).fetchone():
-											row['delta'] = '*'
+								delta = '*'
+								if self.master.delta_object:
+									for row in self.master.delta_object:
+										if row['objectId'] == item['objectId'] and row['delta'] != '+':
+											if self.master.db_conn.select_table('object','object_id',str(row['objectId'])).fetchone():
+												delta = '*'
+											else:
+												delta = '+'
+										else:
+											delta = '+'
+											self.master.delta_object.remove(row)
+
+								self.master.delta_object.append({'objectId':item['objectId'],
+																								 'transport':transport,
+																								 'objectType':objectType,
+																								 'objectName':objectName,
+																								 'description':description,
+																								 'delta':'{}'.format(delta)})
+								for file in self.master.files:
+									if objectId == file['objectId']:
+										file['transport'] = transport
+										file['objectName'] = objectName
+
+								# update delta (*)
+								delta = '*'
+								if self.master.delta_files:
+									for row in self.master.delta_files:
+										if row['objectId'] == objectId and row['delta'] != '+':
+											if self.master.db_conn.select_table('files','object_id',str(row['objectId'])).fetchone():
+												row['delta'] = '*'
+											else:
+												row['delta'] = '+'
 										else:
 											row['delta'] = '+'
-									else:
-										row['delta'] = '+'
-							else:
-								for file in self.master.files:
-									if file['objectId'] == objectId:
-										self.master.delta_files.append(file)
-										file['delta'] = '*'
+								else:
+									for file in self.master.files:
+										if file['objectId'] == objectId:
+											self.master.delta_files.append(file)
+											file['delta'] = '*'
 
-							self.master.file_records.add_file_to_view()
-							self.master.object_records.add_obj_to_view()
-							self.master.object_records.sel_row = None
-							self.close_window()
-							return
-						else:
-							return			
+								self.master.file_records.add_file_to_view()
+								self.master.object_records.add_obj_to_view()
+								self.master.object_records.sel_row = None
+								self.close_window()
+								return
+							else:
+								return			
 
 			# add created objects to master dict
 			self.master.objects.append({'objectId':self.object_id,
@@ -992,6 +951,7 @@ class MainButtons(base.MainButtons):
 		self.master.main_buttons.grid_remove()
 		self.master.change_records.grid_remove()
 		self.master.object_records.grid_remove()
+		self.master.parent_records.reset_fields()
 		self.master.change_records.reset_fields()
 		self.master.object_records.reset_fields()
 		self.master.object_entry.reset_fields()
@@ -1003,6 +963,51 @@ class MainButtons(base.MainButtons):
 	def save_log(self,event=None):
 		''' save log '''
 		# add logic for updating story table
+		if True == True:
+		#if self.master.validation.validate_parent_data(self.ent_parent.get(),
+		#																								self.ent_story.get(),
+		#																								self.ent_p_descr.get()):
+			
+			if self.master.parent_records.ent_p_descr != self.master.parent_desc:
+				self.master.delta_parent.clear()
+				self.master.delta_parent.append({'parent':self.master.parent,
+																				 'descr':self.master.parent_records.ent_p_descr.get()})
+			story = None
+			description = None
+			descriptions = [story['description'] for story in self.master.stories]
+
+			# get a list of stories that have been entered, add to master list
+			self.master.stories.clear()
+			for item in self.master.parent_records.window.winfo_children():
+				if '!frame' in str(item):
+					for i in item.winfo_children():
+						if '!label' in str(i):
+							if i.name == 'story':
+								story = i['text']
+							if i.name == 'descr':
+								description = i['text']
+						elif '!button' in str(i):
+							i.destroy()
+					self.master.stories.append({'parent':self.master.parent,
+																			'story':story,
+																			'description':description})
+					if self.master.db_conn.select_table('story','story',story).fetchone():
+						if description not in descriptions:
+							for item in self.master.delta_stories:
+								if item['story'] == story:
+									del self.master.delta_stories[self.master.delta_stories.index(item)]
+							self.master.delta_stories.append({'parent':self.master.parent,
+																								'story':story,
+																								'description':description,
+																								'delta':'*'})
+					else:
+						for item in self.master.delta_stories:
+							if item['story'] == story:
+								del self.master.delta_stories[self.master.delta_stories.index(item)]
+						self.master.delta_stories.append({'parent':self.master.parent,
+																							'story':story,
+																							'description':description,
+																							'delta':'+'})
 
 		# validate no unsaved data
 		if self.master.object_entry.ent_obj.get():
@@ -1061,7 +1066,6 @@ class MainButtons(base.MainButtons):
 
 		# update charm table
 		charm_add = [list(item.values()) for item in self.master.delta_charm if item['delta'] == '+']
-		print(charm_add)
 		if charm_add:
 			for item in charm_add:
 				result = self.master.db_conn.insert_table('charm',item[0:4])
