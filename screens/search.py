@@ -85,8 +85,7 @@ class SearchOptions(base.SearchOptions):
 								if qry_transport:
 									for tran in qry_transport:
 										#qry = self.master.db_conn.select_table('charm','charm',tran[1]).fetchone()
-										self.master.transports.append({'story':story[1],
-																									 'transport':tran[0],
+										self.master.transports.append({'transport':tran[0],
 																									 'charm':tran[1],
 																									 'description':tran[2]})
 										qry_object = self.master.db_conn.select_table('object','transport',tran[0]).fetchall()
@@ -113,8 +112,7 @@ class SearchOptions(base.SearchOptions):
 						qry_transport = self.master.db_conn.select_table('transport','charm',charm[2]).fetchall()
 						if qry_transport:
 							for tran in qry_transport:
-								self.master.transports.append({'story':qry_story[1],
-																							 'transport':tran[0],
+								self.master.transports.append({'transport':tran[0],
 																							 'charm':tran[1],
 																							 'description':tran[2]})
 								qry_object = self.master.db_conn.select_table('object','transport',tran[0]).fetchall()
@@ -140,8 +138,7 @@ class SearchOptions(base.SearchOptions):
 					qry_transport = self.master.db_conn.select_table('transport','charm',qry_charm[2]).fetchall()
 					if qry_transport:
 						for tran in qry_transport:
-							self.master.transports.append({'story':qry_story[1],
-																						 'transport':tran[0],
+							self.master.transports.append({'transport':tran[0],
 																						 'charm':tran[1],
 																						 'description':tran[2]})
 							qry_object = self.master.db_conn.select_table('object','transport',tran[0]).fetchall()
@@ -159,8 +156,7 @@ class SearchOptions(base.SearchOptions):
 			qry_transport = self.master.db_conn.select_table('transport','transport',self.ent_tran.get()).fetchone()
 			if qry_transport:
 				qry = self.master.db_conn.select_table('charm','charm',qry_transport[1]).fetchone()
-				self.master.transports.append({'story':qry[1],
-																	 		'transport':qry_transport[0],
+				self.master.transports.append({'transport':qry_transport[0],
 														 					'charm':qry_transport[1],
 														 					'description':qry_transport[2]})
 				qry_charm = self.master.db_conn.select_table('charm','charm',qry_transport[1]).fetchone()
@@ -205,8 +201,7 @@ class SearchOptions(base.SearchOptions):
 		self.master.parent_records.ent_p_descr.insert(0,self.master.parent_desc)
 
 		if self.master.objects:
-			for item in self.master.objects:
-				self.master.object_records.add_obj_to_view()
+			self.master.object_records.add_obj_to_view()
 
 		# get files
 		for item in self.master.objects:
@@ -342,17 +337,7 @@ class ParentRecords(base.ParentRecords):
 			for item in self.window.winfo_children():
 				item.destroy()
 			self.add_story()
-			self.canvas.configure(height=50)
-
-		def set_scroll(self,event=None):
-			''' set the scroll region based of the amount of entries '''
-			bbox = self.canvas.bbox('all')
-			if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-				self.vscroll.grid_forget()
-			else:
-				if self.master.master.screen_id == self.master:
-					self.vscroll.grid(row=0,column=1,sticky='ns')
-			self.canvas.configure(scrollregion=bbox)
+			#self.canvas.configure(height=50)
 
 
 class ChangeEntry(base.ChangeEntry):
@@ -361,7 +346,7 @@ class ChangeEntry(base.ChangeEntry):
 	def submit(self,event):
 		''' top level submit event '''
 		#story = self.v_story.get()
-		charm = self.ent_charm.get()
+		charm = self.v_charm.get()
 		trans = self.ent_trans.get()
 		descr = self.ent_descr.get()
 
@@ -373,8 +358,7 @@ class ChangeEntry(base.ChangeEntry):
 		if True == True:
 		#if self.master.validation.validate_charm_and_tran(charm,trans,descr):
 
-			self.master.transports.append({'story':story,
-																		 'transport':trans,
+			self.master.transports.append({'transport':trans,
 																		 'charm':charm,
 																		 'description':descr})
 
@@ -416,16 +400,6 @@ class ChangeRecords(base.ChangeRecords):
 		''' remove charm & transport '''
 		pass
 
-	def set_scroll(self,event=None):
-		''' set the scroll region based of the amount of entries '''
-		bbox = self.canvas.bbox('all')
-		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-			self.vscroll.grid_forget()
-		else:
-			if self.master.master.screen_id == self.master:
-				self.vscroll.grid(row=2,column=1,sticky='ns')
-		self.canvas.configure(scrollregion=bbox)
-
 	def set_display(self):
 		''' add items to the parent and charm/transport view '''
 		self.reset_fields()
@@ -454,17 +428,19 @@ class ObjectRecords(base.ObjectRecords):
 
 	def add_obj_to_view(self,objectId=None):
 		''' add objects to the view '''
+		#print(self.objects)
+		#return
 		self.reset_fields()
 		for item in self.master.objects:
 			#if item['objectId'] == objectId:
 				# self.main objects
-			line = tk.Frame(self.main)
+			line = tk.Frame(self.objects)
 			line.id = item['objectId']
 			cbtn_sel   = tk.Checkbutton(line,width=1,height=1,anchor='w',text=' ')
 			lbl_tran  = tk.Label(line,width=15,anchor='w',text=item['transport'])
 			lbl_objty = tk.Label(line,width=15,anchor='w',text=item['objectType'])
-			lbl_obj   = tk.Label(line,width=40,anchor='w',text=item['objectName'])
-			lbl_desc  = tk.Label(line,width=25,anchor='w',text=item['description'].strip('\n'))
+			lbl_obj   = tk.Label(line,width=25,anchor='w',text=item['objectName'])
+			lbl_desc  = tk.Label(line,width=40,anchor='w',text=item['description'].strip('\n'))
 
 			# config
 			cbtn_sel.sel = tk.StringVar()
@@ -488,7 +464,7 @@ class ObjectRecords(base.ObjectRecords):
 			lbl_obj.grid(row=0,column=3)
 			lbl_desc.grid(row=0,column=4)
 
-			line.grid(row=self.row_index)
+			line.grid(row=self.row_index,column=0)
 
 			# increment table row index
 			self.row_index = self.row_index + 1
@@ -503,7 +479,7 @@ class ObjectRecords(base.ObjectRecords):
 
 	def reset_fields(self):
 		''' reset fields '''
-		for widget in self.main.winfo_children():
+		for widget in self.objects.winfo_children():
 			widget.destroy()	
 
 	def sel_obj(self,event=None):
@@ -554,16 +530,6 @@ class ObjectRecords(base.ObjectRecords):
 		self.add_obj_to_view()
 		self.update_idletasks()
 		self.set_scroll()
-
-	def set_scroll(self,event=None):
-		''' set the scroll region based of the amount of entries '''
-		bbox = self.canvas.bbox('all')
-		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-			self.vscroll.grid_forget()
-		else:
-			if self.master.master.screen_id == self.master:
-				self.vscroll.grid(row=1,column=1,sticky='ns')
-		self.canvas.configure(scrollregion=bbox)
 
 	def edit_entry(self,event=None):
 		''' edit entry '''
@@ -839,11 +805,11 @@ class FileRecords(base.FileRecords):
 		for item in self.master.files:
 			if True == True:
 				# file name, object, transport
-				line = tk.Frame(self.main)
+				line = tk.Frame(self.files)
 				cbtn_sel = tk.Checkbutton(line,width=1,height=1,state='normal',anchor='w')
-				lbl_fname = tk.Label(master=line,width=25,height=1,anchor='w',text=item['dFileName'])
-				lbl_obj   = tk.Label(master=line,width=20,height=1,anchor='w',text=item['objectName'])
-				lbl_tran  = tk.Label(master=line,width=20,height=1,anchor='w',text=item['transport'])
+				lbl_fname = tk.Label(line,width=25,height=1,anchor='w',text=item['dFileName'])
+				lbl_obj   = tk.Label(line,width=20,height=1,anchor='w',text=item['objectName'])
+				lbl_tran  = tk.Label(line,width=20,height=1,anchor='w',text=item['transport'])
 
 				# config
 				cbtn_sel.sel = tk.StringVar()
@@ -916,18 +882,8 @@ class FileRecords(base.FileRecords):
 
 	def reset_fields(self):
 		''' reset fields '''
-		for widget in self.main.winfo_children():
+		for widget in self.files.winfo_children():
 			widget.destroy()
-
-	def set_scroll(self,event=None):
-		''' set the scroll region based of the amount of entries '''
-		bbox = self.canvas.bbox('all')
-		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-			self.vscroll.grid_forget()
-		else:
-			if self.master.master.screen_id == self.master:
-				self.vscroll.grid(row=1,column=1,sticky='ns')
-		self.canvas.configure(scrollregion=bbox)
 
 
 class MainButtons(base.MainButtons):
@@ -1156,7 +1112,7 @@ class MainButtons(base.MainButtons):
 				if story['story'] == charm['story']:
 					text = text + 'CHARM: {} - {}\n'.format(charm['charm'],charm['description'])
 					for trans in self.master.transports:
-						if story['story'] == trans['story'] and charm['charm'] == trans['charm']:
+						if charm['charm'] == trans['charm']:
 							text = text + 'TRANSPORT: {}'.format(trans['transport']) +'\n'
 							for obj in self.master.objects:
 								if obj['transport'] == trans['transport']:

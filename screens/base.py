@@ -67,20 +67,20 @@ class SearchOptions(tk.Frame):
     self.btn_reset.grid(row=0,column=1,padx=2)
 
     # self.main grid
-    self.lbl_parent.grid(row=0,column=0,pady=(5,0))
-    self.ent_parent.grid(row=0,column=1,pady=(5,0))
-    self.lbl_story.grid(row=1,column=0)
-    self.ent_story.grid(row=1,column=1)
-    self.lbl_charm.grid(row=2,column=0)
-    self.ent_charm.grid(row=2,column=1)
-    self.lbl_desc.grid(row=3,column=0)
-    self.ent_desc.grid(row=3,column=1)
-    self.lbl_tran.grid(row=4,column=0)
-    self.ent_tran.grid(row=4,column=1)
-    self.lbl_obj.grid(row=5,column=0)
-    self.ent_obj.grid(row=5,column=1)
-    self.lbl_objty.grid(row=6,column=0,pady=(0,5))
-    self.ent_objty.grid(row=6,column=1,pady=(0,5))
+    self.lbl_parent.grid(row=0,column=0,sticky='e',padx=2,pady=(5,0))
+    self.ent_parent.grid(row=0,column=1,sticky='w',pady=(5,0))
+    self.lbl_story.grid(row=1,column=0,sticky='e',padx=2)
+    self.ent_story.grid(row=1,column=1,sticky='w')
+    self.lbl_charm.grid(row=2,column=0,sticky='e',padx=2)
+    self.ent_charm.grid(row=2,column=1,sticky='w')
+    self.lbl_desc.grid(row=3,column=0,sticky='e',padx=2)
+    self.ent_desc.grid(row=3,column=1,sticky='w')
+    self.lbl_tran.grid(row=4,column=0,sticky='e',padx=2)
+    self.ent_tran.grid(row=4,column=1,sticky='w')
+    self.lbl_obj.grid(row=5,column=0,sticky='e',padx=2)
+    self.ent_obj.grid(row=5,column=1,sticky='w')
+    self.lbl_objty.grid(row=6,column=0,sticky='e',padx=2,pady=(0,5))
+    self.ent_objty.grid(row=6,column=1,sticky='w',pady=(0,5))
 
   def search(self,event):
     ''' select from the database and display to user '''
@@ -147,7 +147,7 @@ class ParentEntry(tk.Toplevel):
     self.lbl_charm.grid(row=1,column=0,padx=5,sticky='e')
     self.ent_charm.grid(row=1,column=1,padx=5,pady=1,sticky='w')
     self.lbl_descr.grid(row=2,column=0,padx=5,sticky='e')
-    self.ent_descr.grid(row=2,column=1,padx=5,pady=1,sticky='w')
+    self.ent_descr.grid(row=2,column=1,padx=5,pady=(0,5),sticky='w')
 
   def submit(self,event=None):
     ''' submit button event handler '''
@@ -216,7 +216,7 @@ class ParentRecords(tk.Frame):
       self.h_lbl_charm.configure(bg='light gray',width=10,anchor='w')
       self.h_lbl_descr.configure(bg='light gray',width=40,anchor='w')
       self.ent_p_descr.configure(width=50)
-      self.canvas.configure(height=70,yscrollcommand=self.vscroll.set)
+      self.canvas.configure(height=70,width=500,yscrollcommand=self.vscroll.set)
       self.vscroll.configure(command=self.canvas.yview)
 
       # events
@@ -245,12 +245,13 @@ class ParentRecords(tk.Frame):
       self.ent_p_descr.grid(row=2,column=1,padx=5,pady=(0,2),sticky='w')
 
       # self.header_story grid
-      self.h_lbl_story.grid(row=0,column=0,padx=(5,0))
+      self.h_lbl_story.grid(row=0,column=0,padx=(7,0))
       self.h_lbl_charm.grid(row=0,column=1)
       self.h_lbl_descr.grid(row=0,column=2)
 
       # self.main_story grid
-      self.canvas.grid(row=0,column=0)
+      self.canvas.pack(side='left',anchor='w')#row=0,column=0)
+      #self.vscroll.pack(side='right',anchor='e',fill='y')
       self.canvas.create_window((0,0),window=self.window,anchor='nw')
 
     def new_story(self,event=None):
@@ -267,7 +268,13 @@ class ParentRecords(tk.Frame):
 
     def set_scroll(self,event=None):
       ''' set the scroll region based of the amount of entries '''
-      pass
+      bbox = self.canvas.bbox('all')
+      if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+        self.vscroll.pack_forget()
+      else:
+        if self.master.master.screen_id == self.master:
+          self.vscroll.pack(side='right',anchor='e',fill='y')#grid(row=0,column=2,padx=0,sticky='ns')
+      self.canvas.configure(scrollregion=bbox)
 
 
 class ChangeEntry(tk.Toplevel):
@@ -350,14 +357,17 @@ class ChangeRecords(tk.Frame):
     self.row_index = 0
 
     # main objects
-    self.change  = tk.Frame(self)
+    #self.change  = tk.Frame(self)
     self.header  = tk.Frame(self)
     self.main    = tk.Frame(self)
-    self.vscroll = tk.Scrollbar(self,orient='vertical')
 
     # self.main objects
     self.main_header = tk.Frame(self.main)
-    self.canvas  = tk.Canvas(self.main,height=90,width=200,yscrollcommand=self.vscroll.set)
+    self.window = tk.Frame(self.main)
+
+    # self.window objects
+    self.vscroll = tk.Scrollbar(self.window,orient='vertical')
+    self.canvas  = tk.Canvas(self.window,height=90,width=500,yscrollcommand=self.vscroll.set)
 
     # self.canvas
     self.charms = tk.Frame(self.canvas)
@@ -393,8 +403,11 @@ class ChangeRecords(tk.Frame):
     self.main.grid(row=1,sticky='nsew')
 
     # self.main grid
-    self.main_header.grid(row=0,column=0)
-    self.canvas.grid(row=1,column=0,sticky='nsew')
+    self.main_header.grid(row=0,column=0,sticky='ew')
+    self.window.grid(row=1,column=0,sticky='nsew')
+
+    # self.window grid
+    self.canvas.pack(side='left',anchor='w')
 
     # self.header grid
     self.title.grid(row=0,column=0,padx=5)
@@ -420,7 +433,13 @@ class ChangeRecords(tk.Frame):
 
   def set_scroll(self,event=None):
     ''' set the scroll region based of the amount of entries '''
-    pass
+    bbox = self.canvas.bbox('all')
+    if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+      self.vscroll.pack_forget()
+    else:
+      if self.master.master.screen_id == self.master:
+        self.vscroll.pack(side='right',anchor='e',fill='y')
+    self.canvas.configure(scrollregion=bbox)
 
   def call_object_records(self,event):
     ''' add object records to view that are related to clicked transports '''
@@ -541,13 +560,20 @@ class ObjectRecords(tk.Frame):
       self.sel_row = None
 
       # main objects
-      self.window  = tk.Frame(self)
       self.header  = tk.Frame(self)
-      self.vscroll = tk.Scrollbar(self,orient='vertical')
+      self.main  = tk.Frame(self)
+
+      # self.main objects
+      self.main_header = tk.Frame(self.main)
+      self.window = tk.Frame(self.main)
 
       # self.window objects
-      self.main_header = tk.Frame(self.window)
-      self.canvas      = tk.Canvas(self.window,height=100,yscrollcommand=self.vscroll.set)
+      self.vscroll = tk.Scrollbar(self.window,orient='vertical')
+      self.canvas  = tk.Canvas(self.window,height=100,yscrollcommand=self.vscroll.set,width=700)
+
+      # self.canvas
+      self.objects = tk.Frame(self.canvas)
+      self.canvas.create_window((0,0),window=self.objects,anchor='nw')
 
       # self.header objects
       self.btn_bar = tk.Frame(self.header)
@@ -562,17 +588,13 @@ class ObjectRecords(tk.Frame):
       self.lbl_h_sel   = tk.Label(self.main_header,bg='light gray',width=4,anchor='w',text=' ')
       self.lbl_h_tran  = tk.Label(self.main_header,bg='light gray',width=15,anchor='w',text='Transport')
       self.lbl_h_objty = tk.Label(self.main_header,bg='light gray',width=15,anchor='w',text='Obj. Type')
-      self.lbl_h_obj   = tk.Label(self.main_header,bg='light gray',width=40,anchor='w',text='Object')
-      self.lbl_h_desc  = tk.Label(self.main_header,bg='light gray',width=25,anchor='w',text='Description') 
-
-      # self.canvas
-      self.main = tk.Frame(self.canvas)
-      self.canvas.create_window((0,0),window=self.main,anchor='nw')
+      self.lbl_h_obj   = tk.Label(self.main_header,bg='light gray',width=25,anchor='w',text='Object')
+      self.lbl_h_desc  = tk.Label(self.main_header,bg='light gray',width=40,anchor='w',text='Description') 
 
       # config
       self.header.configure(bg='dark gray',borderwidth=2,relief='ridge')
       self.title.configure(bg='dark gray',fg='black',font=('Arial',12,'bold'))
-      self.window.configure(borderwidth=2,relief='groove')
+      self.main.configure(borderwidth=2,relief='groove')
       self.btn_bar.configure(bg='dark gray')
       self.vscroll.configure(command=self.canvas.yview)
 
@@ -583,13 +605,17 @@ class ObjectRecords(tk.Frame):
       self.btn_rmv.bind('<Button-1>', self.remove_obj_from_view)
 
       # main grid
-      self.header.grid(row=0,sticky='nsew')
-      self.vscroll.grid(row=1,column=1,sticky='ns')
-      self.window.grid(row=1)
+      self.header.grid(row=0,column=0,sticky='nsew')
+      self.main.grid(row=1,column=0,sticky='nsew')
+      #self.vscroll.grid(row=1,column=1,sticky='ns')
+
+      # self.main grid
+      self.main_header.grid(row=0,column=0,sticky='ew')
+      self.window.grid(row=1,column=0,sticky='nsew')
 
       # self.window grid
-      self.main_header.grid(row=0,column=0,sticky='nsew')
-      self.canvas.grid(row=1,column=0,sticky='nsew')
+      self.canvas.pack(side='left',anchor='w',fill='x')
+      self.vscroll.pack(side='right',anchor='e',fill='y')
 
       # self.header grid
       self.title.grid(row=0,column=0,padx=5)
@@ -629,7 +655,13 @@ class ObjectRecords(tk.Frame):
 
     def set_scroll(self,event=None):
       ''' set the scroll region based of the amount of entries '''
-      pass
+      bbox = self.canvas.bbox('all')
+      if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+        self.vscroll.pack_forget()
+      else:
+        if self.master.master.screen_id == self.master:
+          self.vscroll.pack(side='right',anchor='e',fill='y')
+      self.canvas.configure(scrollregion=bbox)
 
     def edit_entry(self, event=None):
       ''' edit entry '''
@@ -683,7 +715,7 @@ class FileEntry(tk.Toplevel):
 
     # main grid
     self.header.grid(row=0,column=0)
-    self.main.grid(row=1,column=0)
+    self.main.grid(row=1,column=0,sticky='w',padx=5)
 
     # self.header grid
     self.title.grid(row=0,column=0,padx=5)
@@ -694,12 +726,12 @@ class FileEntry(tk.Toplevel):
     self.btn_cancel.grid(row=0,column=1,padx=2)
 
     # self.main grid
-    self.lbl_trans.grid(row=0,column=0)
-    self.opt_trans.grid(row=0,column=1)
-    self.lbl_obj.grid(row=1,column=0)
-    self.opt_obj.grid(row=1,column=1)
-    self.btn_select.grid(row=2,column=0)
-    self.lbl_file.grid(row=2,column=1)
+    self.lbl_trans.grid(row=0,column=0,sticky='e',padx=2,pady=(5,2))
+    self.opt_trans.grid(row=0,column=1,sticky='w',pady=(5,2))
+    self.lbl_obj.grid(row=1,column=0,sticky='e',padx=2,pady=2)
+    self.opt_obj.grid(row=1,column=1,sticky='w')
+    self.btn_select.grid(row=2,column=0,sticky='e',pady=(10,5))
+    self.lbl_file.grid(row=2,column=1,sticky='w',padx=2,pady=(10,5))
 
   def submit(self,event):
     ''' submit '''
@@ -744,13 +776,20 @@ class FileRecords(tk.Frame):
       self.sel_row = None
 
       # main objects
-      self.window  = tk.Frame(self)
+      self.main  = tk.Frame(self)
       self.header  = tk.Frame(self)
-      self.vscroll = tk.Scrollbar(self,orient='vertical')
+
+      # self.main objects
+      self.main_header = tk.Frame(self.main)
+      self.window = tk.Frame(self.main)
 
       # self.window objects
-      self.main_header = tk.Frame(self.window)
-      self.canvas      = tk.Canvas(self.window,yscrollcommand=self.vscroll.set,height=100)
+      self.vscroll = tk.Scrollbar(self.window,orient='vertical')
+      self.canvas      = tk.Canvas(self.window,yscrollcommand=self.vscroll.set,height=100,width=500)
+
+      # self.canvas
+      self.files = tk.Frame(self.canvas)
+      self.canvas.create_window((0,0),window=self.files,anchor='nw')
 
       # self.header objects
       self.btn_bar = tk.Frame(self.header)
@@ -766,14 +805,10 @@ class FileRecords(tk.Frame):
       self.lbl_h_obj   = tk.Label(self.main_header,bg='light gray',width=20,anchor='w',text='Object')
       self.lbl_h_tran  = tk.Label(self.main_header,bg='light gray',width=20,anchor='w',text='Transport')
 
-      # self.canvas
-      self.main = tk.Frame(self.canvas)
-      self.canvas.create_window((0,0),window=self.main,anchor='nw')
-
       # config
       self.title.configure(bg='dark gray',fg='black',font=('Arial',12,'bold'))
       self.btn_bar.configure(bg='dark gray')
-      self.window.configure(borderwidth=2,relief='groove')
+      self.main.configure(borderwidth=2,relief='groove')
       self.vscroll.configure(command = self.canvas.yview)
       self.header.configure(bg='dark gray',borderwidth=2,relief='ridge')
       self.canvas.bind('<Configure>',self.set_scroll)
@@ -782,12 +817,15 @@ class FileRecords(tk.Frame):
 
       # main grid
       self.header.grid(row=0,column=0,sticky='nsew')
-      self.window.grid(row=1,column=0)
-      self.vscroll.grid(row=1,column=1,sticky='ns')
-      
-      # self.window grid
+      self.main.grid(row=1,column=0)
+
+      # self.main grid
       self.main_header.grid(row=0,column=0,sticky='nsew')
-      self.canvas.grid(row=1,column=0,sticky='nsew')
+      self.window.grid(row=1,column=0,sticky='nsew')
+
+      # self.window grid
+      self.canvas.pack(side='left',anchor='w',fill='x')
+      self.vscroll.pack(side='right',anchor='e',fill='y')
 
       # self.header grid
       self.title.grid(row=0,column=0,padx=5)
@@ -820,9 +858,15 @@ class FileRecords(tk.Frame):
       pass
 
     def set_scroll(self,event=None):
-      ''' set the scroll region based of the amount of entries '''
-      pass
-
+     ''' set the scroll region based of the amount of entries '''
+     bbox = self.canvas.bbox('all')
+     if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+       self.vscroll.pack_forget()
+     else:
+       if self.master.master.screen_id == self.master:
+         self.vscroll.pack(side='right',anchor='e',fill='y')
+     self.canvas.configure(scrollregion=bbox)
+  
 
 class MainButtons(tk.Frame):
   ''' buttons for primary functions like saving log and cancel '''

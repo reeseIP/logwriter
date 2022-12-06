@@ -138,15 +138,15 @@ class ParentRecords(base.ParentRecords):
 			#self.add_story()
 			#self.canvas.configure(height=50)
 
-		def set_scroll(self,event=None):
-			''' set the scroll region based of the amount of entries '''
-			bbox = self.canvas.bbox('all')
-			if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-				self.vscroll.grid_forget()
-			else:
-				if self.master.master.screen_id == self.master:
-					self.vscroll.grid(row=0,column=1,sticky='ns')
-			self.canvas.configure(scrollregion=bbox)
+	#	def set_scroll(self,event=None):
+	#		''' set the scroll region based of the amount of entries '''
+	#		bbox = self.canvas.bbox('all')
+	#		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+	#			self.vscroll.grid_forget()
+	#		else:
+	#			if self.master.master.screen_id == self.master:
+	#				self.vscroll.grid(row=0,column=1,sticky='ns')
+	#		self.canvas.configure(scrollregion=bbox)
 
 
 class ChangeEntry(base.ChangeEntry):
@@ -154,7 +154,7 @@ class ChangeEntry(base.ChangeEntry):
 
 	def submit(self,event):
 		''' top level submit event '''
-		charm = self.ent_charm.get()
+		charm = self.v_charm.get()
 		trans = self.ent_trans.get()
 		descr = self.ent_descr.get()
 
@@ -166,8 +166,7 @@ class ChangeEntry(base.ChangeEntry):
 		if True == True:
 		#if self.master.validation.validate_charm_and_tran(charm,trans,descr):
 
-			self.master.transports.append({'story':story,
-																		 'transport':trans,
+			self.master.transports.append({'transport':trans,
 																		 'charm':charm,
 																		 'description':descr})
 
@@ -204,15 +203,15 @@ class ChangeRecords(base.ChangeRecords):
 		''' remove charm & transport '''
 		pass
 
-	def set_scroll(self,event=None):
-		''' set the scroll region based of the amount of entries '''
-		bbox = self.canvas.bbox('all')
-		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-			self.vscroll.grid_forget()
-		else:
-			if self.master.master.screen_id == self.master:
-				self.vscroll.grid(row=1,column=1,sticky='ns')
-		self.canvas.configure(scrollregion=bbox)
+	#def set_scroll(self,event=None):
+	#	''' set the scroll region based of the amount of entries '''
+	#	bbox = self.canvas.bbox('all')
+	#	if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+	#		self.vscroll.grid_forget()
+	#	else:
+	#		if self.master.master.screen_id == self.master:
+	#			self.vscroll.grid(row=1,column=1,sticky='ns')
+	#	self.canvas.configure(scrollregion=bbox)
 
 	def set_display(self):
 		''' add items to the parent and charm/transport view '''
@@ -331,22 +330,19 @@ class ObjectRecords(base.ObjectRecords):
 			''' add object to view '''
 			self.reset_fields()
 			for item in self.master.objects:
-				#if item['objectId'] == objectId:
-					# self.main objects
-
-				line = tk.Frame(self.main)
+				line = tk.Frame(self.objects)
 				line.id = item['objectId']
 				cbtn_sel   = tk.Checkbutton(line,width=1,height=1,anchor='w',text=' ')
 				lbl_tran  = tk.Label(line,width=15,anchor='w',text=item['transport'])
 				lbl_objty = tk.Label(line,width=15,anchor='w',text=item['objectType'])
-				lbl_obj   = tk.Label(line,width=40,anchor='w',text=item['objectName'])
-				lbl_desc  = tk.Label(line,width=25,anchor='w',text=item['description'].strip('\n'))
+				lbl_obj   = tk.Label(line,width=25,anchor='w',text=item['objectName'])
+				lbl_desc  = tk.Label(line,width=40,anchor='w',text=item['description'].strip('\n'))
 
 				# config
 				cbtn_sel.sel = tk.StringVar()
 				cbtn_sel.configure(variable=cbtn_sel.sel)
 				cbtn_sel.sel.set(0)
-
+				
 				# set an index for table row reference
 				cbtn_sel.id,  cbtn_sel.name  = item['objectId'],'sel'
 				lbl_tran.id,  lbl_tran.name  = item['objectId'],'transport'
@@ -380,7 +376,7 @@ class ObjectRecords(base.ObjectRecords):
 		def reset_fields(self):
 			''' reset fields '''
 			# remove all items on object table
-			for widget in self.main.winfo_children():
+			for widget in self.objects.winfo_children():
 				widget.destroy()	
 
 		def sel_obj(self,event):
@@ -416,15 +412,15 @@ class ObjectRecords(base.ObjectRecords):
 			self.update_idletasks()
 			self.set_scroll()
 
-		def set_scroll(self,event=None):
-			''' set the scroll region based of the amount of entries '''
-			bbox = self.canvas.bbox('all')
-			if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-				self.vscroll.grid_forget()
-			else:
-				if self.master.master.screen_id == self.master:
-					self.vscroll.grid(row=1,column=1,sticky='ns')
-			self.canvas.configure(scrollregion=bbox)
+	#	def set_scroll(self,event=None):
+	#		''' set the scroll region based of the amount of entries '''
+	#		bbox = self.canvas.bbox('all')
+	#		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+	#			self.vscroll.grid_forget()
+	#		else:
+	#			if self.master.master.screen_id == self.master:
+	#				self.vscroll.grid(row=1,column=1,sticky='ns')
+	#		self.canvas.configure(scrollregion=bbox)
 
 		def edit_entry(self,event=None):
 			''' edit entry '''
@@ -568,10 +564,10 @@ class FileRecords(base.FileRecords):
 				if True == True:
 				#if item['objectId'] == objectId:
 					# file name, object, transport
-					cbtn_sel = tk.Checkbutton(self.main,width=1,height=1,state='normal',anchor='w')
-					lbl_fname = tk.Label(master=self.main,width=25,height=1,anchor='w',text=item['dFileName'])
-					lbl_obj   = tk.Label(master=self.main,width=20,height=1,anchor='w',text=item['objectName'])
-					lbl_tran  = tk.Label(master=self.main,width=20,height=1,anchor='w',text=item['transport'])
+					cbtn_sel = tk.Checkbutton(self.files,width=1,height=1,state='normal',anchor='w')
+					lbl_fname = tk.Label(master=self.files,width=25,height=1,anchor='w',text=item['dFileName'])
+					lbl_obj   = tk.Label(master=self.files,width=20,height=1,anchor='w',text=item['objectName'])
+					lbl_tran  = tk.Label(master=self.files,width=20,height=1,anchor='w',text=item['transport'])
 
 					# config
 					cbtn_sel.sel = tk.StringVar()
@@ -637,18 +633,18 @@ class FileRecords(base.FileRecords):
 		def reset_fields(self):
 			''' reset fields '''
 			# remove all items on file table
-			for widget in self.main.winfo_children():
+			for widget in self.files.winfo_children():
 				widget.destroy()
 
-		def set_scroll(self,event=None):
-			''' set the scroll region based of the amount of entries '''
-			bbox = self.canvas.bbox('all')
-			if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-				self.vscroll.grid_forget()
-			else:
-				if self.master.master.screen_id == self.master:
-					self.vscroll.grid(row=1,column=1,sticky='ns')
-			self.canvas.configure(scrollregion=bbox)
+	#	def set_scroll(self,event=None):
+	#		''' set the scroll region based of the amount of entries '''
+	#		bbox = self.canvas.bbox('all')
+	#		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+	#			self.vscroll.grid_forget()
+	#		else:
+	#			if self.master.master.screen_id == self.master:
+	#				self.vscroll.grid(row=1,column=1,sticky='ns')
+	#		self.canvas.configure(scrollregion=bbox)
 
 
 class MainButtons(base.MainButtons):
@@ -770,7 +766,7 @@ class MainButtons(base.MainButtons):
 		transports = [list(item.values()) for item in self.master.transports]
 		if transports:
 			for item in transports:
-				result = self.master.db_conn.insert_table('transport',item[1:4])
+				result = self.master.db_conn.insert_table('transport',item[0:3])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return
