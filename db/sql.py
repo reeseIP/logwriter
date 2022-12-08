@@ -44,8 +44,11 @@ class ConnectDB():
 
 	def delete_table(self,table=None,field=None,value=None):
 		''' delete table entries '''
+		if table == 'notes':
+			value=value[0]
+			self.cur.execute('''DELETE FROM notes WHERE noteid = {} AND notetxt = "{}" AND created = "{}"'''.format(value[0],value[1],value[2]))
 		if table and not field and not value:
-				self.cur.execute('''DELETE FROM {0}'''.format(table)) # delete entire table (development only)
+			self.cur.execute('''DELETE FROM {0}'''.format(table)) # delete entire table (development only)
 		elif table and field and value:
 			# delete specific entries
 			self.cur.execute('''DELETE FROM {0} WHERE {1} = "{2}"'''.format(
@@ -63,6 +66,9 @@ class ConnectDB():
 		if table and field and max:
 			return self.cur.execute('''SELECT MAX({0}) FROM {1}'''.format(field.strip(''),table))
 
+		if table:
+			return self.cur.execute('''SELECT * FROM {}'''.format(table))
+
 
 #--------------------------#
 # QUICK TABLE MODIFICATION #
@@ -76,10 +82,13 @@ class ConnectDB():
 	#cur.execute('''DROP TABLE transport''')
 	#cur.execute('''DROP TABLE object''')
 	#cur.execute('''DROP TABLE files''')
+	#cur.execute('''DROP TABLE note_header''')
+	#cur.execute('''DROP TABLE notes''')
 	#c.commit()
 
 	#cur.execute('''CREATE TABLE IF NOT EXISTS parent (parent TEXT UNIQUE NOT NULL,
-	#																										descr TEXT NOT NULL)''')
+	#																										descr TEXT NOT NULL,
+	#																										status TEXT NOT NULL)''')
 
 	#cur.execute('''CREATE TABLE IF NOT EXISTS story (parent TEXT NOT NULL,
 	#																									story TEXT UNIQUE NOT NULL,
@@ -106,6 +115,16 @@ class ConnectDB():
 	#																									file_name TEXT NOT NULL,
 	#																									file_path TEXT UNIQUE NOT NULL,
 	#																									file_id TEXT UNIQUE NOT NULL)''')
+
+	#cur.execute('''CREATE TABLE IF NOT EXISTS note_header (noteid INTEGER PRIMARY KEY AUTOINCREMENT,
+	#																									parent TEXT  NOT NULL,
+	#																									descr TEXT NOT NULL,
+	#																									status TEXT NOT NULL,
+	#																									system TEXT NOT NULL)''')
+
+	#cur.execute('''CREATE TABLE IF NOT EXISTS notes (noteid INTEGER NOT NULL,
+	#																									notetxt TEXT NOT NULL,
+	#																									created DATE NOT NULL)''')
 	#c.commit()
 
 
@@ -120,4 +139,12 @@ class ConnectDB():
 #obj.cur.execute('''DELETE FROM transport''')
 #obj.cur.execute('''DELETE FROM object''')
 #obj.cur.execute('''DELETE FROM files''')
+#obj.cur.execute('''DELETE FROM note_header WHERE parent = "DFCT0019501"''')
+#obj.cur.execute('''INSERT INTO note_header VALUES(NULL,'DFCT0019468','New storage locations for Denver FC','Created','Development')''')
+#obj.cur.execute('''INSERT INTO note_header VALUES(NULL,'DFCT0019500','ADSI IDOC redistribution','Created','Development')''')
+#obj.cur.execute('''INSERT INTO note_header VALUES(NULL,'DFCT0019501','Testing a bug','Created','Development')''')
+#obj.cur.execute('''INSERT INTO parent VALUES('DFCT0019468','New storage locations for Denver FC','Created')''')
+#obj.cur.execute('''INSERT INTO parent VALUES('DFCT0019500','ADSI IDOC redistribution','Created')''')
+#obj.cur.execute('''INSERT INTO parent VALUES('DFCT0019501',' Testing a bug','Created')''')
+
 #obj.c.commit()

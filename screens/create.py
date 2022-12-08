@@ -715,6 +715,12 @@ class MainButtons(base.MainButtons):
 		if result:
 			alert = messagebox.showerror('Error',result)
 			return
+
+		# update note_header table
+		result = self.master.db_conn.insert_table('note_header',[self.master.parent,self.master.parent_records.ent_p_descr.get(),'Created','Development'])
+		if result:
+			alert = messagebox.showerror('Error',result)
+			return
 			
 		# update story table
 		#list_stories = [item for item in self.master.stories]
