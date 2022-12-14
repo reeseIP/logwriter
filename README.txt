@@ -4,6 +4,8 @@ Log writer:
 	* search with column name returns entire column
 * Enhancements
 	* remove function to story & charm/transport view
+	* configure event for enter
+	* add logic to delete unmapped files
 * UX tweaking
 * Home functionality
 	* Home button to nav bar

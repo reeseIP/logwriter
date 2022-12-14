@@ -17,6 +17,7 @@ class Search(tk.Frame):
 		tk.Frame.__init__(self,*args,**kwargs)
 
 		# screen globals
+		self.search_value = None
 		self.parent = None
 		self.parent_desc = None
 		self.stories = []
@@ -33,13 +34,18 @@ class Search(tk.Frame):
 		self.delta_object = []
 		self.delta_files = []
 
+		# query tables
+		self.query_parent = []
+
 		# maintain connection to DB from master
 		self.db_conn = self.master.db_conn
 
 		# screen objects
-		self.search_options = SearchOptions(self)
-		self.parent_entry   = ParentEntry(self)
-		self.parent_records = ParentRecords(self)
+		self.validation     = self.master.validation
+		self.query_result = QueryResult(self)
+		self.parent_entry = ParentEntry(self)
+		self.story_entry   = StoryEntry(self)
+		self.story_records = StoryRecords(self)
 		self.change_entry   = ChangeEntry(self)
 		self.change_records = ChangeRecords(self)
 		self.object_entry   = ObjectEntry(self)
@@ -47,207 +53,197 @@ class Search(tk.Frame):
 		self.file_entry     = FileEntry(self)
 		self.file_records   = FileRecords(self)
 		self.main_buttons   = MainButtons(self)
-		self.validation     = self.master.validation
-
-		# set the initial display
-		self.search_options.grid(row=0,padx=10,pady=5,sticky='w')
 
 	def reset(self):
 		''' reset the screen to initial settings '''
 		self.main_buttons.canc_log()
 
+	def query(self):
+		''' query '''
+		validate = self.validation
+		value = self.search_value
+		query = None
 
-class SearchOptions(base.SearchOptions):
-	''' selection options for searching '''
-
-	def search(self,event):
-		''' select from the database and display to user '''
-		self.master.reset()
-		qry_parent = None
-		
-		# get selections
-		if self.ent_parent.get():
-			qry_parent = self.master.db_conn.select_table('parent','parent',self.ent_parent.get()).fetchone()
-			if qry_parent:
-				qry_story = self.master.db_conn.select_table('story','parent',qry_parent[0]).fetchall()
-				if qry_story:
-					for story in qry_story:
-						self.master.stories.append({'parent':qry_parent[0],
-																				'story':story[1],
-																				'description':story[2]})
-						qry_charm = self.master.db_conn.select_table('charm','story',story[1]).fetchall()
-						if qry_charm:
-							for charm in qry_charm:
-								self.master.charms.append({'story':charm[1],
-																					'charm':charm[2],
-																					'description':charm[3]})
-								qry_transport = self.master.db_conn.select_table('transport','charm',charm[2]).fetchall()
-								if qry_transport:
-									for tran in qry_transport:
-										#qry = self.master.db_conn.select_table('charm','charm',tran[1]).fetchone()
-										self.master.transports.append({'transport':tran[0],
-																									 'charm':tran[1],
-																									 'description':tran[2]})
-										qry_object = self.master.db_conn.select_table('object','transport',tran[0]).fetchall()
-										if qry_object:
-											for obj in qry_object:
-												self.master.objects.append({'objectId':obj[0],
-																										'transport':obj[1],
-																										'objectType':obj[2],
-																										'objectName':obj[3],
-																										'description':obj[4]})
-		elif self.ent_story.get():
-			qry_story = self.master.db_conn.select_table('story','story',self.ent_story.get()).fetchone()
-			if qry_story:
-				qry_parent = [qry_story[0]]
-				self.master.stories.append({'parent':qry_parent[0],
-																		'story':qry_story[1],
-																		'description':qry_story[2]})
-				qry_charm = self.master.db_conn.select_table('charm','story',qry_story[1]).fetchall()
-				if qry_charm:
-					for charm in qry_charm:
-						self.master.charms.append({'story':charm[1],
-																			'charm':charm[2],
-																			'description':charm[3]})
-						qry_transport = self.master.db_conn.select_table('transport','charm',charm[2]).fetchall()
-						if qry_transport:
-							for tran in qry_transport:
-								self.master.transports.append({'transport':tran[0],
-																							 'charm':tran[1],
-																							 'description':tran[2]})
-								qry_object = self.master.db_conn.select_table('object','transport',tran[0]).fetchall()
-								if qry_object:
-									for obj in qry_object:
-										self.master.objects.append({'objectId':obj[0],
-																								'transport':obj[1],
-																								'objectType':obj[2],
-																								'objectName':obj[3],
-																								'description':obj[4]})
-		elif self.ent_charm.get():
-			qry_charm = self.master.db_conn.select_table('charm','charm',self.ent_charm.get()).fetchone()
-			if qry_charm:
-				self.master.charms.append({'story':qry_charm[1],
-																	'charm':qry_charm[2],
-																	'description':qry_charm[3]})
-				qry_story = self.master.db_conn.select_table('story','story',qry_charm[1]).fetchone()
-				if qry_story:
-					qry_parent = [qry_story[0]]
-					self.master.stories.append({'parent':qry_story[0],
-																			'story':qry_story[1],
-																			'description':qry_story[2]})
-					qry_transport = self.master.db_conn.select_table('transport','charm',qry_charm[2]).fetchall()
-					if qry_transport:
-						for tran in qry_transport:
-							self.master.transports.append({'transport':tran[0],
-																						 'charm':tran[1],
-																						 'description':tran[2]})
-							qry_object = self.master.db_conn.select_table('object','transport',tran[0]).fetchall()
-							if qry_object:
-								for obj in qry_object:
-									self.master.objects.append({'objectId':obj[0],
-																							'transport':obj[1],
-																							'objectType':obj[2],
-																							'objectName':obj[3],
-																							'description':obj[4]})
-
-		elif self.ent_desc.get():
-			pass
-		elif self.ent_tran.get():
-			qry_transport = self.master.db_conn.select_table('transport','transport',self.ent_tran.get()).fetchone()
-			if qry_transport:
-				qry = self.master.db_conn.select_table('charm','charm',qry_transport[1]).fetchone()
-				self.master.transports.append({'transport':qry_transport[0],
-														 					'charm':qry_transport[1],
-														 					'description':qry_transport[2]})
-				qry_charm = self.master.db_conn.select_table('charm','charm',qry_transport[1]).fetchone()
-				if qry_charm:
-					self.master.charms.append({'story':qry_charm[1],
-																		 'charm':qry_charm[2],
-																		 'description':qry_charm[3]})
-					qry_story = self.master.db_conn.select_table('story','story',qry_charm[1]).fetchone()
-					if qry_story:
-						self.master.stories.append({'parent':qry_story[0],
-																				'story':qry_story[1],
-																				'description':qry_story[2]})
-						qry_parent = [qry_story[0]]
-						qry_object = self.master.db_conn.select_table('object','transport',qry_transport[0]).fetchall()
-						if qry_object:
-							for obj in qry_object:
-								self.master.objects.append({'objectId':obj[0],
-																						'transport':obj[1],
-																						'objectType':obj[2],
-																						'objectName':obj[3],
-																						'description':obj[4]})
-		elif self.ent_obj.get():
-			pass
-		elif self.ent_objty.get():
-			pass
-
-		# set the parent & story
-		if qry_parent:
-			self.master.parent = qry_parent[0]
-			self.master.parent_desc = qry_parent[1]
-			# hide the search fields
-			self.main.grid_forget()
-			self.btn_search.configure(state='disabled')
-			self.btn_search.unbind('<Button-1>')
+		if not validate.validate_parent(value):
+			query = validate.read_db('parent','parent',value)
+		elif not validate.validate_story(value):
+			query = validate.read_db('story','story',value)
+		elif not validate.validate_charm(value):
+			query = validate.read_db('charm','charm',value)
+		elif not validate.validate_transport(value):
+			query = validate.read_db('transport','transport',value)
+		elif not validate.validate_object(value):
+			query = validate.read_db('object','object_name',value)
+			
+		if query:
+			self.query_result.display_result(query)
 		else:
-			alert = messagebox.showerror('Error','No record found.')
-			return
+			self.query_result.display_result(None)
 
-		# set the parent & story to be displayed
-		self.master.parent_records.ent_parent.insert(0,self.master.parent)
-		self.master.parent_records.ent_parent.configure(state='disabled')
-		self.master.parent_records.ent_p_descr.insert(0,self.master.parent_desc)
 
-		if self.master.objects:
-			self.master.object_records.add_obj_to_view()
+class QueryResult(tk.Frame):
+	''' query result '''
 
-		# get files
-		for item in self.master.objects:
-			qry_files = self.master.db_conn.select_table('files','object_id',str(item['objectId'])).fetchall()
-			if qry_files:
-				for row in qry_files:
-					self.master.files.append({'objectId':row[0],
-																		'objectName':row[1],
-																		'transport':row[2],
-																		'dFileName':row[3],
-																		'dFilePath':row[4],
-																		'dFileId':row[5],
+	def __init__(self,*args,**kwargs):
+		tk.Frame.__init__(self,*args,**kwargs)
+
+		self.validate = self.master.validation
+		self.main = tk.Frame(self)
+
+		self.vscroll = tk.Scrollbar(self.main,orient='vertical')
+		self.canvas = tk.Canvas(self.main,yscrollcommand=self.vscroll.set)
+
+		self.vscroll.configure(command=self.canvas.yview)
+		self.canvas.configure(scrollregion=(0,0,1000,1000))
+
+		self.window = tk.Frame(self.canvas)
+
+		self.canvas.create_window((0,0),window=self.window,anchor='nw',width=2000)
+		self.main.pack(anchor='nw',side='left',fill='both',expand=True)
+
+		self.canvas.pack(side='left',anchor='nw',fill='x',expand=True)
+		#self.vscroll.pack(side='right',fill='y',anchor='e')
+		self.canvas.bind('<Configure>',self.set_scroll)
+
+	def display_result(self,query):
+		''' display result '''
+		self.reset_fields()
+
+		if query:
+			for item in query:
+				parent = item[0]
+				stories = [row[1] for row in self.validate.read_db('story','parent',parent)]
+				charms = [row[2] for row in self.validate.read_db('charm','parent',parent)]
+				transports = [row[1] for row in self.validate.read_db('transport','parent',parent)]
+				objects = [row[4] for row in self.validate.read_db('object','parent',parent)]
+
+				block = tk.Frame(self.window)
+				block.id = parent
+				block.bind('<Button-1>',self.get_item)
+				lbl_parent = tk.Label(block,text='PARENT: ',font=('Arial',10,'bold'))
+				lbl_stories = tk.Label(block,text='STORIES: ',font=('Arial',10,'bold'))
+				lbl_charms = tk.Label(block,text='CHARMS: ',font=('Arial',10,'bold'))
+				lbl_transports = tk.Label(block,text='TRANSPORTS: ',font=('Arial',10,'bold'))
+				lbl_objects = tk.Label(block,text='OBJECTS: ',font=('Arial',10,'bold'))
+
+				lbl_parent_val = tk.Label(block,text=parent)
+				lbl_stories_val = tk.Label(block,text=stories)
+				lbl_charms_val = tk.Label(block,text=charms)
+				lbl_transports_val = tk.Label(block,text=transports)
+				lbl_objects_val = tk.Label(block,text=objects)
+
+				lbl_parent.grid(row=0,column=0,sticky='e')
+				lbl_stories.grid(row=1,column=0,sticky='e')
+				lbl_charms.grid(row=2,column=0,sticky='e')
+				lbl_transports.grid(row=3,column=0,sticky='e')
+				lbl_objects.grid(row=4,column=0,sticky='e')
+
+				lbl_parent_val.grid(row=0,column=1,sticky='w')
+				lbl_stories_val.grid(row=1,column=1,sticky='w')
+				lbl_charms_val.grid(row=2,column=1,sticky='w')
+				lbl_transports_val.grid(row=3,column=1,sticky='w')
+				lbl_objects_val.grid(row=4,column=1,sticky='w')
+
+				block.pack(fill='x',expand=True,pady=10)
+
+		else:
+			lbl_no_qry = tk.Label(self.window,text='No Results Found',font=('Arial',24))
+			lbl_no_qry.pack(anchor='nw')
+
+		self.pack(anchor='nw',side='top',fill='both',expand=True)
+		self.update_idletasks()
+		self.set_scroll()
+
+	def set_scroll(self,event=None):
+		''' set the scroll region based of the amount of entries '''
+		bbox = self.canvas.bbox('all')
+		if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
+			self.vscroll.pack_forget()
+		else:
+			if self.master.master.screen_id == self.master:
+				self.vscroll.pack(side='right',anchor='e',fill='y')#grid(row=0,column=2,padx=0,sticky='ns')
+		self.canvas.configure(scrollregion=bbox)
+
+	def reset_fields(self):
+		''' reset fields '''
+		for item in self.window.winfo_children():
+			item.destroy()
+
+	def get_item(self,event=None):
+		''' get item '''
+		parent = self.validate.read_db('parent','parent',event.widget.id)[0]
+
+		[self.master.stories.append({'parent':row[0] ,
+																'story':row[1],
+																'description':row[2]}) 
+			for row in self.validate.read_db('story','parent',parent[0])]
+
+		[self.master.charms.append({'parent': row[0],
+																'story':row[1],
+																'charm':row[2],
+																'description':row[3]})
+			for row in self.validate.read_db('charm','parent',parent[0])]
+
+		[self.master.transports.append({'parent': row[0],
+																		'transport':row[1],
+																		'charm':row[2],
+																		'description':row[3]}) 
+			for row in self.validate.read_db('transport','parent',parent[0])]
+
+		[self.master.objects.append({'parent':row[0],
+																'objectId':row[1],
+																'transport':row[2],
+																'objectType':row[3],
+																'objectName':row[4],
+																'description':row[5]})
+			for row in self.validate.read_db('object','parent',parent[0])]
+
+		[self.master.files.append({'parent':row[0],
+																		'objectId':row[1],
+																		'objectName':row[2],
+																		'transport':row[3],
+																		'dFileName':row[4],
+																		'dFilePath':row[5],
+																		'dFileId':row[6],
 																		'dFileCont':''})
+			for row in self.validate.read_db('files','parent',parent[0])]
 
-		# set the display
-		self.master.parent_records.ent_parent.configure(state='disabled')
-		self.master.parent_records.add_story()
+		self.pack_forget()
+		self.master.parent = parent[0]
+		self.master.parent_entry.ent_parent.insert(0,parent[0])
+		self.master.parent_entry.ent_descr.insert(0,parent[1])
+		self.master.parent_entry.ent_parent.configure(state='disabled')
+		self.master.story_records.add_story()
 		self.master.change_records.set_display()
 		self.master.file_records.add_file_to_view()
-		self.master.parent_records.grid(row=1,padx=10,pady=5,sticky='w')
-		self.master.change_records.grid(row=2,padx=10,pady=5,sticky='w')
-		self.master.object_records.grid(row=3,padx=10,pady=5,sticky='w')
-		self.master.file_records.grid(row=4,padx=10,pady=5,sticky='w')
-		self.master.main_buttons.grid(row=5,padx=10,pady=5,sticky='w')
+		self.master.object_records.add_obj_to_view()
+		self.master.parent_entry.grid(row=1,padx=10,pady=5,sticky='w')
+		self.master.story_records.grid(row=2,padx=10,pady=5,sticky='w')
+		self.master.change_records.grid(row=3,padx=10,pady=5,sticky='w')
+		self.master.object_records.grid(row=4,padx=10,pady=5,sticky='w')
+		self.master.file_records.grid(row=5,padx=10,pady=5,sticky='w')
+		self.master.main_buttons.grid(row=6,padx=10,pady=5)
 		self.master.main_buttons.btn_expo.grid(row=0,column=2)
-		
-	def reset_fields(self,event=None):
-		''' reset the screen '''
-		self.master.reset()
-		self.main.grid(row=1,sticky='nsew')
-		self.btn_search.configure(state='normal')
-		self.btn_search.bind('<Button-1>',self.search)
-		self.ent_parent.focus_set()
-		for item in self.main.winfo_children():
-			if item.winfo_class() == 'Entry':
-				item.delete(0,'end')
 
 
 class ParentEntry(base.ParentEntry):
+	''' parent entry '''
+
+	def reset_fields(self,event=None):
+		self.ent_parent.configure(state='normal')
+		self.ent_parent.delete(0,'end')
+		self.ent_descr.delete(0,'end')
+		self.ent_parent.focus_set()
+
+
+class StoryEntry(base.StoryEntry):
 	''' change entry '''
 
 	def submit(self,event=None):
 		''' submit button event handler '''
-		story = self.ent_story.get()
-		charm = self.ent_charm.get()
-		descr = self.ent_descr.get()
+		story = self.ent_story.get().strip('\n')
+		charm = self.ent_charm.get().strip('\n')
+		descr = self.ent_descr.get().strip('\n')
 
 		self.master.stories.append({'parent':self.master.parent,
 																'story':story,
@@ -271,7 +267,7 @@ class ParentEntry(base.ParentEntry):
 																			'descr':descr,
 																			'delta':'+'})
 
-		self.master.parent_records.add_story()
+		self.master.story_records.add_story()
 		self.cancel()
 
 	def cancel(self):
@@ -283,21 +279,26 @@ class ParentEntry(base.ParentEntry):
 
 	def new_story(self):
 		''' new story '''
-		x = self._root().winfo_x()
-		y = self._root().winfo_y()
-		self.geometry("+%d+%d" %(x+200,y+200))
-		self.wm_deiconify()
+		if self.master.parent:
+			x = self._root().winfo_x()
+			y = self._root().winfo_y()
+			self.geometry("+%d+%d" %(x+200,y+200))
+			self.wm_deiconify()
+		else:
+			alert = messagebox.showerror('Error','Please enter a parent')
 
 
-class ParentRecords(base.ParentRecords):
+class StoryRecords(base.StoryRecords):
 		''' change entry data '''
 
 		def new_story(self,event=None):
 			''' new story '''
-			self.master.parent_entry.new_story()
+			self.master.story_entry.new_story()
 
 		def add_story(self,event=None,storyId=None):
 			''' add story '''
+			#self.reset_fields()
+
 			for item in self.window.winfo_children():
 				item.destroy()
 
@@ -306,12 +307,13 @@ class ParentRecords(base.ParentRecords):
 				row = tk.Frame(self.window)
 
 				# story & description
-				lbl_story = tk.Label(row,text=item['story'],width=10,anchor='w')
-				lbl_charm = tk.Label(row,text=item['charm'],width=10,anchor='w')
-				lbl_descr = tk.Label(row,text=item['description'],width=40,anchor='w')
+				lbl_story = tk.Label(row,text=item['story'],width=13,anchor='w')
+				lbl_charm = tk.Label(row,text=item['charm'],width=12,anchor='w')
+				lbl_descr = tk.Label(row,text=item['description'],anchor='w')
 
 				# config
 				lbl_story.name = 'story'
+				lbl_charm.name = 'charm'
 				lbl_descr.name = 'descr'
 				row.id = self.row_index
 
@@ -319,7 +321,7 @@ class ParentRecords(base.ParentRecords):
 				row.grid(row=self.row_index,column=0,pady=(2,0),sticky='w')
 				lbl_story.grid(row=0,column=0,padx=(5,0))
 				lbl_charm.grid(row=0,column=1)
-				lbl_descr.grid(row=0,column=2)
+				lbl_descr.grid(row=0,column=2,sticky='ew')
 
 				self.row_index = self.row_index + 1
 
@@ -330,10 +332,6 @@ class ParentRecords(base.ParentRecords):
 		def reset_fields(self):
 			''' reset fields '''
 			self.row_index = 0
-			self.ent_parent.configure(state='normal')
-			self.ent_parent.delete(0,'end')
-			self.ent_p_descr.delete(0,'end')
-			self.ent_parent.focus_set()
 			for item in self.window.winfo_children():
 				item.destroy()
 			self.add_story()
@@ -346,9 +344,9 @@ class ChangeEntry(base.ChangeEntry):
 	def submit(self,event):
 		''' top level submit event '''
 		#story = self.v_story.get()
-		charm = self.v_charm.get()
-		trans = self.ent_trans.get()
-		descr = self.ent_descr.get()
+		charm = self.v_charm.get().strip('\n')
+		trans = self.ent_trans.get().strip('\n')
+		descr = self.ent_descr.get().strip('\n')
 
 		for item in self.master.transports:
 			if item['transport'] == trans:
@@ -358,11 +356,13 @@ class ChangeEntry(base.ChangeEntry):
 		if True == True:
 		#if self.master.validation.validate_charm_and_tran(charm,trans,descr):
 
-			self.master.transports.append({'transport':trans,
+			self.master.transports.append({'parent':self.master.parent,
+																			'transport':trans,
 																		 'charm':charm,
 																		 'description':descr})
 
-			self.master.delta_transport.append({'transport':trans,
+			self.master.delta_transport.append({'parent': self.master.parent,
+																						'transport':trans,
 																					 'charm':charm,
 																					 'description':descr,
 																					 'delta':'+'})
@@ -379,14 +379,17 @@ class ChangeEntry(base.ChangeEntry):
 
 	def new_change(self):
 		''' new change '''
-		charms = [item['charm'] for item in self.master.charms]
-		self.opt_charm['menu'].delete(0,'end')
-		for item in charms:
-			self.opt_charm['menu'].add_command(label=item,command=tk._setit(self.v_charm,item))
-		x = self._root().winfo_x()
-		y = self._root().winfo_y()
-		self.geometry("+%d+%d" %(x+200,y+200))
-		self.wm_deiconify()
+		if self.master.parent:
+			charms = [item['charm'] for item in self.master.charms]
+			self.opt_charm['menu'].delete(0,'end')
+			for item in charms:
+				self.opt_charm['menu'].add_command(label=item,command=tk._setit(self.v_charm,item))
+			x = self._root().winfo_x()
+			y = self._root().winfo_y()
+			self.geometry("+%d+%d" %(x+200,y+200))
+			self.wm_deiconify()
+		else:
+			alert = messagebox.showerror('Error','Please enter a parent')
 
 
 class ChangeRecords(base.ChangeRecords):
@@ -404,12 +407,14 @@ class ChangeRecords(base.ChangeRecords):
 		''' add items to the parent and charm/transport view '''
 		self.reset_fields()
 		for item in self.master.transports:
-			lbl_charm = tk.Label(self.charms,anchor='w',width=10,text=item['charm'])
-			lbl_trans = tk.Label(self.charms,anchor='w',width=10,text=item['transport'])
-			lbl_descr = tk.Label(self.charms,anchor='w',width=40,text=item['description'])
-			lbl_charm.grid(row=self.row_index,column=0,padx=5)
-			lbl_trans.grid(row=self.row_index,column=1,padx=5)
-			lbl_descr.grid(row=self.row_index,column=2,padx=5)
+			line = tk.Frame(self.charms)
+			lbl_charm = tk.Label(line,anchor='w',width=12,text=item['charm'])
+			lbl_trans = tk.Label(line,anchor='w',width=12,text=item['transport'])
+			lbl_descr = tk.Label(line,anchor='w',text=item['description'])
+			line.grid(row=self.row_index,column=0,pady=(2,0),sticky='w')
+			lbl_charm.grid(row=0,column=0,padx=(5,0))
+			lbl_trans.grid(row=0,column=1)
+			lbl_descr.grid(row=0,column=2,sticky='ew')
 
 			self.row_index = self.row_index + 1
 
@@ -428,19 +433,17 @@ class ObjectRecords(base.ObjectRecords):
 
 	def add_obj_to_view(self,objectId=None):
 		''' add objects to the view '''
-		#print(self.objects)
-		#return
 		self.reset_fields()
 		for item in self.master.objects:
 			#if item['objectId'] == objectId:
 				# self.main objects
 			line = tk.Frame(self.objects)
 			line.id = item['objectId']
-			cbtn_sel   = tk.Checkbutton(line,width=1,height=1,anchor='w',text=' ')
-			lbl_tran  = tk.Label(line,width=15,anchor='w',text=item['transport'])
-			lbl_objty = tk.Label(line,width=15,anchor='w',text=item['objectType'])
-			lbl_obj   = tk.Label(line,width=25,anchor='w',text=item['objectName'])
-			lbl_desc  = tk.Label(line,width=40,anchor='w',text=item['description'].strip('\n'))
+			cbtn_sel   = tk.Checkbutton(line,width=1,height=1,anchor='nw',text=' ')
+			lbl_tran  = tk.Label(line,width=12,anchor='nw',text=item['transport'])
+			lbl_objty = tk.Label(line,width=16,anchor='nw',text=item['objectType'])
+			lbl_obj   = tk.Label(line,width=30,anchor='nw',text=item['objectName'])
+			lbl_desc  = tk.Label(line,anchor='nw',text=item['description'].strip('\n'))
 
 			# config
 			cbtn_sel.sel = tk.StringVar()
@@ -448,11 +451,12 @@ class ObjectRecords(base.ObjectRecords):
 			cbtn_sel.sel.set(0)
 
 			# set an index for table row reference
-			cbtn_sel.id,  cbtn_sel.name  = item['objectId'],'sel'
-			lbl_tran.id,  lbl_tran.name  = item['objectId'],'transport'
-			lbl_objty.id, lbl_objty.name = item['objectId'],'objectType'
-			lbl_obj.id,   lbl_obj.name   = item['objectId'],'objectName'
-			lbl_desc.id,  lbl_desc.name  = item['objectId'],'description'
+			cbtn_sel.id = item['objectId']
+			cbtn_sel.name  = 'sel'
+			lbl_tran.name  = 'transport'
+			lbl_objty.name = 'objectType'
+			lbl_obj.name   = 'objectName'
+			lbl_desc.name  = 'description'
 
 			# bind button one click event for selecting table row
 			cbtn_sel.bind('<ButtonRelease-1>',self.sel_obj)
@@ -462,9 +466,9 @@ class ObjectRecords(base.ObjectRecords):
 			lbl_tran.grid(row=0,column=1)
 			lbl_objty.grid(row=0,column=2)
 			lbl_obj.grid(row=0,column=3)
-			lbl_desc.grid(row=0,column=4)
+			lbl_desc.grid(row=0,column=4,sticky='ew')
 
-			line.grid(row=self.row_index,column=0)
+			line.grid(row=self.row_index,column=0,sticky='w')	
 
 			# increment table row index
 			self.row_index = self.row_index + 1
@@ -480,7 +484,9 @@ class ObjectRecords(base.ObjectRecords):
 	def reset_fields(self):
 		''' reset fields '''
 		for widget in self.objects.winfo_children():
-			widget.destroy()	
+			if widget._name != 'header':
+				widget.destroy()
+		self.sel_row = None
 
 	def sel_obj(self,event=None):
 		''' move selected object to the entry view '''
@@ -522,9 +528,12 @@ class ObjectRecords(base.ObjectRecords):
 			# file table delta updates
 			for file in self.master.files:
 				 if file['objectId'] == objectId:
-						obj['delta'] = '-'
-						self.master.delta_object.append(obj)
+						file['delta'] = '-'
+						self.master.delta_files.append(file)
 			[self.master.files.remove(file) for file in self.master.files if file['objectId'] == objectId]
+
+		print(self.master.delta_files)
+		print(self.master.delta_object)
 
 		self.master.file_records.add_file_to_view()
 		self.add_obj_to_view()
@@ -536,17 +545,18 @@ class ObjectRecords(base.ObjectRecords):
 		if self.sel_row.id or self.sel_row.id == 0:
 			self.master.object_entry.new_object()
 			self.master.object_entry.grab_set()
-			for item in self.main.winfo_children():
-				if item.id == self.sel_row.id:
-					for row in item.winfo_children():
-						if row.name == 'transport':
-							self.master.object_entry.v_trans.set(row['text'])
-						elif row.name == 'objectType':
-							self.master.object_entry.v_objty.set(row['text'])
-						elif row.name == 'objectName':
-							self.master.object_entry.ent_obj.insert(0,row['text'])
-						elif row.name == 'description':
-							self.master.object_entry.txt_desc.insert(0.0,row['text'])
+			for item in self.objects.winfo_children():
+				if item._name != 'header':
+					if item.id == self.sel_row.id:
+						for row in item.winfo_children():
+							if row.name == 'transport':
+								self.master.object_entry.v_trans.set(row['text'])
+							elif row.name == 'objectType':
+								self.master.object_entry.v_objty.set(row['text'])
+							elif row.name == 'objectName':
+								self.master.object_entry.ent_obj.insert(0,row['text'])
+							elif row.name == 'description':
+								self.master.object_entry.txt_desc.insert(0.0,row['text'])
 		else:
 			messagebox.showwarning('Warning','Please select an entry to edit.')
 
@@ -556,9 +566,9 @@ class ObjectEntry(base.ObjectEntry):
 
 	def add_obj(self,event=None):
 		''' add object '''
-		transport = self.v_trans.get()
-		objectType = self.v_objty.get()
-		objectName = self.ent_obj.get()
+		transport = self.v_trans.get().strip('\n')
+		objectType = self.v_objty.get().strip('\n')
+		objectName = self.ent_obj.get().strip('\n')
 		description = self.txt_desc.get(1.0,'end')
 
 		if True == True:
@@ -591,7 +601,8 @@ class ObjectEntry(base.ObjectEntry):
 											delta = '+'
 											self.master.delta_object.remove(row)
 
-								self.master.delta_object.append({'objectId':item['objectId'],
+								self.master.delta_object.append({'parent': self.master.parent,
+																								'objectId':item['objectId'],
 																								 'transport':transport,
 																								 'objectType':objectType,
 																								 'objectName':objectName,
@@ -628,14 +639,16 @@ class ObjectEntry(base.ObjectEntry):
 								return			
 
 			# add created objects to master dict
-			self.master.objects.append({'objectId':self.object_id,
+			self.master.objects.append({'parent': self.master.parent,
+																	'objectId':self.object_id,
 																	'transport':transport,
 																	'objectType':objectType,
 																	'objectName':objectName,
 																	'description':description})
 
 			# update delta (+)
-			self.master.delta_object.append({'objectId':self.object_id,
+			self.master.delta_object.append({'parent': self.master.parent,
+																			 'objectId':self.object_id,
 																			 'transport':transport,
 																			 'objectType':objectType,
 																			 'objectName':objectName,
@@ -661,16 +674,20 @@ class ObjectEntry(base.ObjectEntry):
 		self.txt_desc.delete(1.0,'end')
 
 	def new_object(self,event=None):
-		transports = [item['transport'] for item in self.master.transports]
-		self.opt_trans['menu'].delete(0,'end')
-		for item in transports:
-			self.opt_trans['menu'].add_command(label=item,command=tk._setit(self.v_trans,item))
-		self.reset_fields()
-		x = self._root().winfo_x()
-		y = self._root().winfo_y()
-		self.geometry("+%d+%d" %(x+200,y+200))
-		self.deiconify()
-		self.grab_set()
+		''' new object '''
+		if self.master.parent:
+			transports = [item['transport'] for item in self.master.transports]
+			self.opt_trans['menu'].delete(0,'end')
+			for item in transports:
+				self.opt_trans['menu'].add_command(label=item,command=tk._setit(self.v_trans,item))
+			self.reset_fields()
+			x = self._root().winfo_x()
+			y = self._root().winfo_y()
+			self.geometry("+%d+%d" %(x+200,y+200))
+			self.deiconify()
+			self.grab_set()
+		else:
+			alert = messagebox.showerror('Error','Please enter a parent')
 
 	def close_window(self,event=None):
 		self.reset_fields()
@@ -685,7 +702,8 @@ class FileEntry(base.FileEntry):
 		''' submit '''
 		# add attached files to master list
 		if self.lbl_file['text']:
-			self.master.files.append({'objectId':self.objectId,
+			self.master.files.append({'parent':self.master.parent,
+																'objectId':self.objectId,
 																'objectName':self.objectName,
 																'transport':self.transport,
 																'dFileName':self.dfile_name,
@@ -693,7 +711,8 @@ class FileEntry(base.FileEntry):
 																'dFileId':self.dfile_id,
 																'dFileCont':self.dfile_cont})
 
-			self.master.delta_files.append({'objectId':self.objectId,
+			self.master.delta_files.append({'parent':self.master.parent,
+																			'objectId':self.objectId,
 																			'objectName':self.objectName,
 																			'transport':self.transport,
 																			'dFileName':self.dfile_name,
@@ -718,8 +737,8 @@ class FileEntry(base.FileEntry):
 
 	def select(self,event):
 		''' select '''
-		self.objectName = self.v_object.get()
-		self.transport = self.v_transport.get()
+		self.objectName = self.v_object.get().strip('\n')
+		self.transport = self.v_transport.get().strip('\n')
 		# ensure that the object & transport are entered
 		if self.objectName != 'Select an Object' and self.transport != 'Select a Transport':
 			self.objectId = [item['objectId'] for item in self.master.objects if item['objectName'] == self.objectName]
@@ -761,15 +780,18 @@ class FileEntry(base.FileEntry):
 
 	def new_file(self,event=None):
 		''' attach file '''
-		self.opt_trans['menu'].delete(0,'end')
-		transports = [item['transport'] for item in self.master.transports]
-		for item in transports:
-			self.opt_trans['menu'].add_command(label=item,command=tk._setit(self.v_transport, item))
+		if self.master.parent:
+			self.opt_trans['menu'].delete(0,'end')
+			transports = [item['transport'] for item in self.master.transports]
+			for item in transports:
+				self.opt_trans['menu'].add_command(label=item,command=tk._setit(self.v_transport, item))
 
-		x = self._root().winfo_x()
-		y = self._root().winfo_y()
-		self.geometry("+%d+%d" %(x+200,y+200))
-		self.wm_deiconify()
+			x = self._root().winfo_x()
+			y = self._root().winfo_y()
+			self.geometry("+%d+%d" %(x+200,y+200))
+			self.wm_deiconify()
+		else:
+			alert = messagebox.showerror('Error','Please enter a parent')
 
 	def parse_file_name(self,file_name):
 		''' parse file name '''
@@ -806,10 +828,10 @@ class FileRecords(base.FileRecords):
 			if True == True:
 				# file name, object, transport
 				line = tk.Frame(self.files)
-				cbtn_sel = tk.Checkbutton(line,width=1,height=1,state='normal',anchor='w')
-				lbl_fname = tk.Label(line,width=25,height=1,anchor='w',text=item['dFileName'])
-				lbl_obj   = tk.Label(line,width=20,height=1,anchor='w',text=item['objectName'])
-				lbl_tran  = tk.Label(line,width=20,height=1,anchor='w',text=item['transport'])
+				cbtn_sel = tk.Checkbutton(line,width=1,height=1,state='normal',anchor='nw')
+				lbl_fname = tk.Label(line,height=1,anchor='nw',text=item['dFileName'])
+				lbl_obj   = tk.Label(line,width=30,height=1,anchor='nw',text=item['objectName'])
+				lbl_tran  = tk.Label(line,width=12,height=1,anchor='nw',text=item['transport'])
 
 				# config
 				cbtn_sel.sel = tk.StringVar()
@@ -825,11 +847,11 @@ class FileRecords(base.FileRecords):
 
 				# grid placement
 				cbtn_sel.grid(row=0,column=0)
-				lbl_fname.grid(row=0,column=1)
+				lbl_tran.grid(row=0,column=1)
 				lbl_obj.grid(row=0,column=2)
-				lbl_tran.grid(row=0,column=3)
+				lbl_fname.grid(row=0,column=3,sticky='ew')
 
-				line.grid(row=self.row_index,column=0)
+				line.grid(row=self.row_index,column=0,sticky='w')
 
 				# increment table row index
 				self.row_index = self.row_index + 1
@@ -884,7 +906,7 @@ class FileRecords(base.FileRecords):
 		''' reset fields '''
 		for widget in self.files.winfo_children():
 			widget.destroy()
-
+		self.sel_row = None
 
 class MainButtons(base.MainButtons):
 	''' buttons for primary functions like saving log and cancel '''
@@ -902,12 +924,14 @@ class MainButtons(base.MainButtons):
 		self.master.delta_files.clear()
 		self.master.delta_transport.clear()
 		self.master.delta_charm.clear()
-		self.master.parent_records.grid_remove()
+		self.master.parent_entry.grid_remove()
+		self.master.story_records.grid_remove()
 		self.master.file_records.grid_remove()
 		self.master.main_buttons.grid_remove()
 		self.master.change_records.grid_remove()
 		self.master.object_records.grid_remove()
-		self.master.parent_records.reset_fields()
+		self.master.parent_entry.reset_fields()
+		self.master.story_records.reset_fields()
 		self.master.change_records.reset_fields()
 		self.master.object_records.reset_fields()
 		self.master.object_entry.reset_fields()
@@ -915,6 +939,13 @@ class MainButtons(base.MainButtons):
 		self.master.file_entry.wm_withdraw()
 		self.master.change_entry.wm_withdraw()
 		self.master.object_entry.wm_withdraw()
+
+	def cancel(self,event=None):
+		''' cancel '''
+		self.master.pack_forget()
+		self.canc_log()
+		self._root().notes.pack(fill='both',expand=True,pady=(10,0))
+		self._root().screen_id = self._root().notes
 
 	def save_log(self,event=None):
 		''' save log '''
@@ -924,17 +955,17 @@ class MainButtons(base.MainButtons):
 		#																								self.ent_story.get(),
 		#																								self.ent_p_descr.get()):
 			
-			if self.master.parent_records.ent_p_descr != self.master.parent_desc:
+			if self.master.parent_entry.ent_descr != self.master.parent_desc:
 				self.master.delta_parent.clear()
 				self.master.delta_parent.append({'parent':self.master.parent,
-																				 'descr':self.master.parent_records.ent_p_descr.get()})
+																				 'descr':self.master.parent_entry.ent_descr.get()})
 			story = None
 			description = None
 			descriptions = [story['description'] for story in self.master.stories]
 
 			# get a list of stories that have been entered, add to master list
 			self.master.stories.clear()
-			for item in self.master.parent_records.window.winfo_children():
+			for item in self.master.story_records.window.winfo_children():
 				if '!frame' in str(item):
 					for i in item.winfo_children():
 						if '!label' in str(i):
@@ -1008,7 +1039,7 @@ class MainButtons(base.MainButtons):
 
 		if files_add:
 			for item in files_add:
-				result = self.master.db_conn.insert_table('files',item[0:6])
+				result = self.master.db_conn.insert_table('files',item[0:7])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return
@@ -1034,7 +1065,7 @@ class MainButtons(base.MainButtons):
 
 		if transport_add:
 			for item in transport_add:
-				result = self.master.db_conn.insert_table('transport',item[0:3])
+				result = self.master.db_conn.insert_table('transport',item[0:4])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return
@@ -1046,28 +1077,29 @@ class MainButtons(base.MainButtons):
 
 		if object_add:
 			for row in object_add:
-				result = self.master.db_conn.insert_table('object',row[0:5])
+				result = self.master.db_conn.insert_table('object',row[0:6])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return
 
 		if object_del:
 			for row in object_del:
-				result = self.master.db_conn.delete_table('object','object_id',row[0])
+				result = self.master.db_conn.delete_table('object','object_id',row[1])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return
 
 		if object_mod:
 			for row in object_mod:
-				result = self.master.db_conn.update_table('object','transport',row[1],'object_id',row[0])
-				result = self.master.db_conn.update_table('object','object_type',row[2],'object_id',row[0])
-				result = self.master.db_conn.update_table('object','object_name',row[3],'object_id',row[0])
-				result = self.master.db_conn.update_table('object','descr',row[4],'object_id',row[0])
+				result = self.master.db_conn.update_table('object','transport',row[2],'object_id',row[1])
+				result = self.master.db_conn.update_table('object','object_type',row[3],'object_id',row[1])
+				result = self.master.db_conn.update_table('object','object_name',row[4],'object_id',row[1])
+				result = self.master.db_conn.update_table('object','descr',row[5],'object_id',row[1])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return
 
+		alert = messagebox.showinfo('Success','Log Successfully Updated')
 		self.master.delta_object.clear()
 		self.master.delta_files.clear()
 		self.master.delta_charm.clear()
