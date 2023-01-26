@@ -12,13 +12,19 @@ class ConnectDB():
 		# create a connnection with the db
 		with sqlite3.connect(path) as self.c:
 			self.cur = self.c.cursor()
-			return
+
+		# if no entry exists in the notepad table, create a blank entry to update against
+		result = self.select_table('notepad')
+		if not result.fetchall():
+			self.insert_table('notepad',[' ',datetime.datetime.today().strftime("%m-%d-%Y %H:%M:%S")])
+			
+		return
 
 	def update_table(self,table=None,setField=None,setValue=None,whereField=None,whereValue=None):
 		''' update table entries '''
 		if table == 'notepad':
 			self.cur.execute('''UPDATE {} SET {} = "{}"'''.format(
-				table.strip(''),setField.strip(''),setValue.strip('')))
+				table,setField,setValue))
 		else:
 			self.cur.execute('''UPDATE {} SET {} = "{}" WHERE {} = "{}"'''.format(
 				table.strip(''),setField.strip(''),setValue.strip(''),whereField.strip(''),whereValue))
@@ -58,9 +64,6 @@ class ConnectDB():
 			# delete specific entries
 			self.cur.execute('''DELETE FROM {0} WHERE {1} = "{2}"'''.format(
 														  															table,field.strip(''),value))
-		else:
-			print('please enter all parameters or only table')
-			return
 		self.c.commit()
 
 	def select_table(self,table=None,field=None,value=None,max=False):
@@ -142,15 +145,17 @@ class ConnectDB():
 #---------------------#
 # ADHOC SQL EXECUTION #
 #---------------------#
-
 #obj = ConnectDB(path='db.db')
 #obj.cur.execute('''DELETE FROM parent''')
-#obj.cur.execute('''DELETE FROM parent WHERE parent = "DFCT00123232"''')
 #obj.cur.execute('''DELETE FROM story''')
 #obj.cur.execute('''DELETE FROM charm''')
 #obj.cur.execute('''DELETE FROM transport''')
 #obj.cur.execute('''DELETE FROM object''')
 #obj.cur.execute('''DELETE FROM files''')
+#obj.cur.execute('''DELETE FROM note_header''')
+#obj.cur.execute('''DELETE FROM notes''')
+#obj.cur.execute('''DELETE FROM notepad''')
+#obj.cur.execute('''DELETE FROM parent WHERE parent = "DFCT00123232"''')
 #obj.cur.execute('''DELETE FROM note_header WHERE parent = "DFCT0019501"''')
 #obj.cur.execute('''INSERT INTO note_header VALUES(NULL,'DFCT0019468','New storage locations for Denver FC','Created','Development')''')
 #obj.cur.execute('''INSERT INTO note_header VALUES(NULL,'DFCT0019500','ADSI IDOC redistribution','Created','Development')''')
@@ -159,4 +164,7 @@ class ConnectDB():
 #obj.cur.execute('''INSERT INTO parent VALUES('DFCT0019118','ADSI IDOC redistribution')''')
 #obj.cur.execute('''INSERT INTO parent VALUES('DFCT0019501',' Testing a bug','Created')''')
 #obj.cur.execute('''INSERT INTO notepad VALUES('Adding in a new note','12-08-2022 09:31:24')''')
+#obj.cur.execute('''DELETE FROM charm WHERE charm = "CHARM02"''')
+#obj.cur.execute('''DELETE FROM charm WHERE charm = "CHARM03"''')
+#obj.cur.execute('''DELETE FROM charm WHERE charm = "CHARM04"''')
 #obj.c.commit()

@@ -207,6 +207,7 @@ class StoryRecords(tk.Frame):
 
       # variables
       self.row_index = 0
+      self.sel_row = None
 
       # self objects
       self.header = tk.Frame(self)
@@ -218,6 +219,7 @@ class StoryRecords(tk.Frame):
 
       # self.btn_bar objects
       self.btn_new_story = tk.Button(self.btn_bar,text='New Story')
+      self.btn_rmv = tk.Button(self.btn_bar,text='Remove')
 
       # self.main objects
       #self.main_parent  = tk.Frame(self.main)
@@ -225,6 +227,7 @@ class StoryRecords(tk.Frame):
       self.main_story   = tk.Frame(self.main)
 
       # self.header_story objects
+      self.lbl_h_sel   = tk.Label(self.header_story,bg='light gray',width=4,anchor='w',text=' ')
       self.h_lbl_story = tk.Label(self.header_story,text='Story')
       self.h_lbl_charm = tk.Label(self.header_story,text='Charm')
       self.h_lbl_descr = tk.Label(self.header_story,text='Description')
@@ -240,7 +243,6 @@ class StoryRecords(tk.Frame):
       self.header.configure(bg='dark gray',borderwidth=2,relief='ridge')
       self.title.configure(bg='dark gray',fg='black',font=('Arial',12,'bold'))
       self.btn_bar.configure(bg='dark gray')
-      self.btn_new_story.configure(font=('Arial',8),pady=0)
       self.main.configure(borderwidth=2,relief='groove')
       self.header_story.configure(bg='light gray')
       self.h_lbl_story.configure(bg='light gray',width=13,anchor='w')
@@ -251,30 +253,43 @@ class StoryRecords(tk.Frame):
 
       # events
       self.btn_new_story.bind('<Button-1>',self.new_story)
+      self.btn_rmv.bind('<Button-1>',self.remove)
 
       # self grid
-      self.header.grid(row=0,column=0,sticky='nsew')
-      self.main.grid(row=1,column=0,sticky='nsew')
+        #self.header.grid(row=0,column=0,sticky='nsew')
+        #self.main.grid(row=1,column=0,sticky='nsew')
+      self.header.pack(side='top',fill='x',expand=True)
+      self.main.pack(side='bottom',fill='x',expand=True)
 
       # self.header grid
-      self.title.grid(row=0,column=0,padx=4)
-      self.btn_bar.grid(row=0,column=1,padx=2,pady=4)
+      #self.title.grid(row=0,column=0,padx=4)
+      #self.btn_bar.grid(row=0,column=1,padx=2,pady=4)
+      self.title.pack(side='left',padx=4)
+      self.btn_bar.pack(side='right',padx=2,pady=4)
 
       # self.btn_bar grid
       self.btn_new_story.grid(row=0,column=0,padx=(5,2),pady=0)
+      self.btn_rmv.grid(row=0,column=1,padx=2)
 
       # self.main grid
-      self.header_story.grid(row=1,column=0,sticky='nsew')
-      self.main_story.grid(row=2,column=0,sticky='ew')
+      #self.header_story.grid(row=1,column=0,sticky='nsew')
+      #self.main_story.grid(row=2,column=0,sticky='ew')
+      self.header_story.pack(fill='x',expand=True)
+      self.main_story.pack(fill='x',expand=True)
 
       # self.header_story grid
-      self.h_lbl_story.grid(row=0,column=0,padx=(7,0))
-      self.h_lbl_charm.grid(row=0,column=1)
-      self.h_lbl_descr.grid(row=0,column=2,sticky='ew')
+      self.lbl_h_sel.grid(row=0,column=0,ipadx=1)
+      self.h_lbl_story.grid(row=0,column=1)#,padx=(7,0)
+      self.h_lbl_charm.grid(row=0,column=2)
+      self.h_lbl_descr.grid(row=0,column=3,sticky='ew')
 
       # self.main_story grid
-      self.canvas.pack(side='left',anchor='w')
+      self.canvas.pack(side='left',anchor='w',fill='x',expand=True)
       self.canvas.create_window((0,0),window=self.window,anchor='nw')
+
+    def remove(self,event=None):
+      ''' remove '''
+      pass
 
     def new_story(self,event=None):
       ''' new story '''
@@ -294,7 +309,7 @@ class StoryRecords(tk.Frame):
       if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
         self.vscroll.pack_forget()
       else:
-        if self.master.master.screen_id == self.master:
+        if self._root().screen_id == self.master:
           self.vscroll.pack(side='right',anchor='e',fill='y')
       self.canvas.configure(scrollregion=bbox)
 
@@ -374,6 +389,7 @@ class ChangeRecords(tk.Frame):
     tk.Frame.__init__(self,*args,**kwargs)
 
     # variables
+    self.sel_row = None
     self.row_index = 0
 
     # main objects
@@ -402,6 +418,7 @@ class ChangeRecords(tk.Frame):
     self.btn_rem = tk.Button(self.btn_bar,text='Remove')
 
     # self.main_header objects
+    self.lbl_h_sel   = tk.Label(self.main_header,bg='light gray',width=4,anchor='w',text=' ')
     self.lbl_h_charm = tk.Label(self.main_header,anchor='w',width=12,bg='light gray',text='Charm')
     self.lbl_h_trans = tk.Label(self.main_header,anchor='w',width=12,bg='light gray',text='Transport')
     self.lbl_h_descr = tk.Label(self.main_header,anchor='w',bg='light gray',text='Description')
@@ -419,28 +436,29 @@ class ChangeRecords(tk.Frame):
     self.canvas.configure(width=800)
 
     # main grid
-    self.header.grid(row=0,column=0,sticky='nsew')
-    self.main.grid(row=1,sticky='nsew')
+    self.header.pack(side='top',fill='x',expand=True)
+    self.main.pack(side='bottom',fill='x',expand=True)
 
     # self.main grid
-    self.main_header.grid(row=0,column=0,sticky='ew')
-    self.window.grid(row=1,column=0,sticky='nsew')
+    self.main_header.pack(fill='x',expand=True)
+    self.window.pack(fill='x',expand=True)
 
     # self.window grid
-    self.canvas.pack(side='left',anchor='w')
+    self.canvas.pack(side='left',anchor='w',fill='x',expand=True)
 
     # self.header grid
-    self.title.grid(row=0,column=0,padx=5)
-    self.btn_bar.grid(row=0,column=1,padx=2,pady=5)
+    self.title.pack(side='left',padx=4)
+    self.btn_bar.pack(side='right',padx=2,pady=4)
 
     # self.btn_bar grid
     self.btn_add.grid(row=0,column=0,padx=(5,2))
-    #self.btn_rem.grid(row=0,column=1)
+    self.btn_rem.grid(row=0,column=1)
 
     # self.main_header grid
-    self.lbl_h_charm.grid(row=0,column=0,padx=(7,0))
-    self.lbl_h_trans.grid(row=0,column=1)
-    self.lbl_h_descr.grid(row=0,column=2,sticky='ew')
+    self.lbl_h_sel.grid(row=0,column=0,ipadx=1)
+    self.lbl_h_charm.grid(row=0,column=1)#,padx=(7,0)
+    self.lbl_h_trans.grid(row=0,column=2)
+    self.lbl_h_descr.grid(row=0,column=3,sticky='ew')
 
   def add(self,event):
     ''' add charm & transport '''
@@ -483,7 +501,7 @@ class ObjectEntry(tk.Toplevel):
       self.v_objty    = tk.StringVar(self) 
       self.v_trans = tk.StringVar(self)
       self.list_objty = ['Function Module','Program','Table',
-                         'Data Element','Domain','Structure']
+                         'Data Element','Domain','Structure','Screen']
 
       # set the object id, one over current id in the DB
       try:
@@ -589,13 +607,13 @@ class ObjectRecords(tk.Frame):
       self.window = tk.Frame(self.main)
 
       # self.window objects
-      self.hscroll = tk.Scrollbar(self.window,orient='horizontal')
+      self.hscroll = tk.Scrollbar(self.main,orient='horizontal')
       self.vscroll = tk.Scrollbar(self.window,orient='vertical')
       self.canvas  = tk.Canvas(self.window,height=120,yscrollcommand=self.vscroll.set,xscrollcommand=self.hscroll.set)
 
       # self.canvas
       self.objects = tk.Frame(self.canvas)
-      self.main_header = tk.Frame(self.objects)
+      self.main_header = tk.Frame(self.main)
       self.canvas.create_window((0,0),window=self.objects,anchor='nw')
 
       # self.header objects
@@ -612,7 +630,7 @@ class ObjectRecords(tk.Frame):
       self.lbl_h_tran  = tk.Label(self.main_header,bg='light gray',width=12,anchor='w',text='Transport')
       self.lbl_h_objty = tk.Label(self.main_header,bg='light gray',width=16,anchor='w',text='Type')
       self.lbl_h_obj   = tk.Label(self.main_header,bg='light gray',width=30,anchor='w',text='Object')
-      self.lbl_h_desc  = tk.Label(self.main_header,bg='light gray',width=49,anchor='w',text='Description') 
+      self.lbl_h_desc  = tk.Label(self.main_header,bg='light gray',anchor='w',text='Description') 
 
       # config
       self.header.configure(bg='dark gray',borderwidth=2,relief='ridge')
@@ -631,20 +649,21 @@ class ObjectRecords(tk.Frame):
       self.btn_rmv.bind('<Button-1>', self.remove_obj_from_view)
 
       # main grid
-      self.header.grid(row=0,column=0,sticky='nsew')
-      self.main.grid(row=1,column=0,sticky='nsew')
+      self.header.pack(side='top',fill='x',expand=True)
+      self.main.pack(side='bottom',fill='x',expand=True)
 
       # self.main grid
-      self.main_header.grid(row=0,column=0,sticky='nsew')
+      self.main_header.pack(fill='x',expand=True)
+      self.main_header.configure(bd=2,relief='groove')
       self.main_header._name = 'header'
-      self.window.grid(row=1,column=0,sticky='nsew')
+      self.window.pack(side='top',fill='x',expand=True)
 
       # self.window grid
-      self.canvas.grid(row=0,column=0,sticky='nsew')
+      self.canvas.pack(side='left',fill='x',expand=True)
 
       # self.header grid
-      self.title.grid(row=0,column=0,padx=5)
-      self.btn_bar.grid(row=0,column=1,padx=2,pady=5)
+      self.title.pack(side='left',padx=4)
+      self.btn_bar.pack(side='right',padx=2,pady=4)
 
       # self.btn_bar grid
       self.btn_add.grid(row=0,column=0,padx=(5,2))
@@ -674,7 +693,7 @@ class ObjectRecords(tk.Frame):
       ''' select object '''
       pass
 
-    def remove_obj_from_view(self,objectId):
+    def remove_obj_from_view(self,event=None,objectId=None):
       ''' remove object from view '''
       pass
 
@@ -682,11 +701,11 @@ class ObjectRecords(tk.Frame):
       ''' set the scroll region based of the amount of entries '''
       bbox = self.canvas.bbox('all')
       if bbox[3] < int(self.canvas['height'])+10 and self.vscroll.winfo_exists():
-        self.vscroll.grid_forget()
+        self.vscroll.pack_forget()
       else:
         if self.master.master.screen_id == self.master:
           #self.vscroll.pack(side='right',anchor='e',fill='y')
-          self.vscroll.grid(row=0,column=1,sticky='ns')
+          self.vscroll.pack(side='right',fill='y')
       self.canvas.configure(scrollregion=bbox)
 
       if bbox[2] < int(self.canvas['width'])+10 and self.vscroll.winfo_exists():
@@ -694,7 +713,7 @@ class ObjectRecords(tk.Frame):
       else:
         if self.master.master.screen_id == self.master:
           #self.hscroll.pack(side='bottom',anchor='s',fill='x')
-          self.hscroll.grid(row=1,column=0,sticky='ew')
+          self.hscroll.pack(side='bottom',fill='x')
       self.canvas.configure(scrollregion=bbox)
 
     def edit_entry(self, event=None):
@@ -860,20 +879,20 @@ class FileRecords(tk.Frame):
       self.btn_rmv.bind('<Button-1>',self.remove_file)
 
       # main grid
-      self.header.grid(row=0,column=0,sticky='nsew')
-      self.main.grid(row=1,column=0,sticky='nsew')
+      self.header.pack(side='top',fill='x',expand=True)
+      self.main.pack(side='bottom',fill='x',expand=True)
 
       # self.main grid
-      self.main_header.grid(row=0,column=0,sticky='nsew')
-      self.window.grid(row=1,column=0,sticky='nsew')
+      self.main_header.pack(fill='x',expand=True)
+      self.window.pack(fill='x',expand=True)
 
       # self.window grid
-      self.canvas.pack(side='left',anchor='w',fill='x')
-      self.vscroll.pack(side='right',anchor='e',fill='y')
+      self.canvas.pack(side='left',anchor='w',fill='x',expand=True)
+      #self.vscroll.pack(side='right',anchor='e',fill='y')
 
       # self.header grid
-      self.title.grid(row=0,column=0,padx=5)
-      self.btn_bar.grid(row=0,column=1,padx=2,pady=5)
+      self.title.pack(side='left',padx=4)
+      self.btn_bar.pack(side='right',padx=2,pady=4)
 
       # self.btn_bar grid
       self.btn_add.grid(row=0,column=0,padx=(5,2))
@@ -933,6 +952,7 @@ class MainButtons(tk.Frame):
     self.btn_expo.bind('<Button-1>',self.export_log)
 
   def cancel(self,event=None):
+    ''' cancel '''
     pass
 
   def canc_log(self,event=None):

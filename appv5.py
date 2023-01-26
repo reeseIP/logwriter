@@ -25,6 +25,7 @@ class Window(tk.Tk):
 		self.db_path  = list(self.app_path.rglob('*db.db'))[0]
 		self.db_conn  = db.ConnectDB(path=self.db_path)
 		self.iconSearch = PhotoImage(file=self.app_path.joinpath(pathlib.Path('img\\search.png')))
+		self.screen_id = None
 
 		# screen controllers
 		self.validation = validation.Validate(self)
@@ -77,8 +78,8 @@ class Window(tk.Tk):
 		self.nav.pack(fill='x')
 		self.notes.pack(fill='both',expand=True,pady=(10,0))
 
-		# currently displayed screen
-		self.screen_id = self.notes
+		## currently displayed screen
+		#self.screen_id = self.notes
 
 	def get_screen(self,event):
 		''' get screen based on nav button click '''
@@ -89,7 +90,7 @@ class Window(tk.Tk):
 			self.notes.pack(fill='both',expand=True,pady=(10,0))
 			self.screen_id = self.notes
 		elif event.widget.id == 'create':
-			self.create.pack(anchor='sw',pady=(10,0))
+			self.create.pack(anchor='sw',fill='both',expand=True,pady=(10,0))
 			self.screen_id = self.create
 		elif event.widget.id == 'search':
 			self.search.pack(anchor='sw',fill='both',expand=True,pady=(10,0))

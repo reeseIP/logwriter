@@ -41,6 +41,7 @@ class Search(tk.Frame):
 		self.db_conn = self.master.db_conn
 
 		# screen objects
+		self.notes = tk.Frame(self)
 		self.validation     = self.master.validation
 		self.query_result = QueryResult(self)
 		self.parent_entry = ParentEntry(self)
@@ -102,13 +103,11 @@ class QueryResult(tk.Frame):
 		self.main.pack(anchor='nw',side='left',fill='both',expand=True)
 
 		self.canvas.pack(side='left',anchor='nw',fill='x',expand=True)
-		#self.vscroll.pack(side='right',fill='y',anchor='e')
 		self.canvas.bind('<Configure>',self.set_scroll)
 
 	def display_result(self,query):
 		''' display result '''
 		self.reset_fields()
-
 		if query:
 			for item in query:
 				parent = item[0]
@@ -208,8 +207,11 @@ class QueryResult(tk.Frame):
 																		'dFileCont':''})
 			for row in self.validate.read_db('files','parent',parent[0])]
 
+
+
 		self.pack_forget()
 		self.master.parent = parent[0]
+		self.master.parent_desc = parent[1]
 		self.master.parent_entry.ent_parent.insert(0,parent[0])
 		self.master.parent_entry.ent_descr.insert(0,parent[1])
 		self.master.parent_entry.ent_parent.configure(state='disabled')
@@ -217,14 +219,26 @@ class QueryResult(tk.Frame):
 		self.master.change_records.set_display()
 		self.master.file_records.add_file_to_view()
 		self.master.object_records.add_obj_to_view()
-		self.master.parent_entry.grid(row=1,padx=10,pady=5,sticky='w')
-		self.master.story_records.grid(row=2,padx=10,pady=5,sticky='w')
-		self.master.change_records.grid(row=3,padx=10,pady=5,sticky='w')
-		self.master.object_records.grid(row=4,padx=10,pady=5,sticky='w')
-		self.master.file_records.grid(row=5,padx=10,pady=5,sticky='w')
-		self.master.main_buttons.grid(row=6,padx=10,pady=5)
+		self.master.notes.pack(side='right',anchor='nw',pady=(25,0))
+		self.master.parent_entry.pack(side='top',fill='x',expand=True,padx=10,pady=5)
+		self.master.story_records.pack(after=self.master.parent_entry,fill='x',expand=True,padx=10,pady=5)
+		self.master.change_records.pack(after=self.master.story_records,fill='x',expand=True,padx=10,pady=5)
+		self.master.object_records.pack(after=self.master.change_records,fill='x',expand=True,padx=10,pady=5)
+		self.master.file_records.pack(after=self.master.object_records,fill='x',expand=True,padx=10,pady=5)
+		self.master.main_buttons.pack(after=self.master.file_records,fill='x',expand=True,padx=10,pady=5)
 		self.master.main_buttons.btn_expo.grid(row=0,column=2)
 
+		for item in self.master.notes.winfo_children():
+			item.destroy()
+
+		result = self.master.db_conn.select_table('note_header','parent',parent[0]).fetchone()
+		
+		for item in self.master.db_conn.select_table('notes','noteid',str(result[0])).fetchall():
+			label = tk.Label(self.master.notes,text=item[1],wraplength=200,justify='left')
+			label.pack(anchor='w')
+
+
+		self.master.notes.configure(bd=2,relief='groove')
 
 class ParentEntry(base.ParentEntry):
 	''' parent entry '''
@@ -307,6 +321,7 @@ class StoryRecords(base.StoryRecords):
 				row = tk.Frame(self.window)
 
 				# story & description
+				cbtn_sel   = tk.Checkbutton(row,width=1,height=1,anchor='nw',text=' ')
 				lbl_story = tk.Label(row,text=item['story'],width=13,anchor='w')
 				lbl_charm = tk.Label(row,text=item['charm'],width=12,anchor='w')
 				lbl_descr = tk.Label(row,text=item['description'],anchor='w')
@@ -317,11 +332,18 @@ class StoryRecords(base.StoryRecords):
 				lbl_descr.name = 'descr'
 				row.id = self.row_index
 
+				cbtn_sel.sel = tk.StringVar()
+				cbtn_sel.configure(variable=cbtn_sel.sel)
+				cbtn_sel.sel.set(0)
+				cbtn_sel.id = {'story':item['story'],'charm':item['charm']}
+				cbtn_sel.bind('<ButtonRelease-1>',self.selection)
+
 				# grid
 				row.grid(row=self.row_index,column=0,pady=(2,0),sticky='w')
-				lbl_story.grid(row=0,column=0,padx=(5,0))
-				lbl_charm.grid(row=0,column=1)
-				lbl_descr.grid(row=0,column=2,sticky='ew')
+				cbtn_sel.grid(row=0,column=0)#,padx=(5,0)
+				lbl_story.grid(row=0,column=1)
+				lbl_charm.grid(row=0,column=2)
+				lbl_descr.grid(row=0,column=3,sticky='ew')
 
 				self.row_index = self.row_index + 1
 
@@ -336,6 +358,67 @@ class StoryRecords(base.StoryRecords):
 				item.destroy()
 			self.add_story()
 			#self.canvas.configure(height=50)
+
+		def selection(self,event=None):
+			''' move selected object to the entry view '''
+			storyId = event.widget.id
+
+			if self.sel_row:
+				if self.sel_row.id == storyId:
+					self.sel_row = None
+				else:
+					self.sel_row = event.widget
+			else:
+				self.sel_row = event.widget
+
+			for item in self.window.winfo_children():
+				for row in item.winfo_children():
+					if '!checkbutton' in str(row):
+						if self.sel_row:
+							if self.sel_row.id != row.id:
+								row.deselect()
+
+		def remove(self,event=None,changeId=None):
+			''' remove '''
+			if not changeId:
+				changeId = self.sel_row.id
+
+			# charm table delta updates
+			for change in self.master.charms[:]:
+				 if change['charm'] == changeId['charm']:
+						change['delta'] = '-'
+						if self.master.delta_charm:
+							for n in self.master.delta_charm:
+								if n['charm'] == changeId['charm']:
+									n['delta'] = '-'
+								else:
+									self.master.delta_charm.append(change)
+						else:
+								self.master.delta_charm.append(change)
+						self.master.charms.remove(change)
+
+			for change in self.master.stories[:]:
+				 if change['story'] == changeId['story']:
+						change['delta'] = '-'
+						if self.master.delta_stories:
+							for n in self.master.delta_stories:
+								if n['story'] == changeId['story']:
+									n['delta'] = '-'
+								else:
+									self.master.delta_stories.append(change)
+						else:
+								self.master.delta_stories.append(change)
+						self.master.stories.remove(change)
+
+			[self.master.change_records.remove(event=None,changeId={'transport':change['transport']}) 
+				for change in self.master.transports if change['charm'] == changeId['charm']]
+			[self.master.change_records.remove(event=None,changeId={'transport':change['transport']}) 
+				for change in self.master.delta_transport if change['charm'] == changeId['charm']]
+
+			self.add_story()
+			self.update_idletasks()
+			self.set_scroll()
+			self.sel_row = None
 
 
 class ChangeEntry(base.ChangeEntry):
@@ -357,15 +440,15 @@ class ChangeEntry(base.ChangeEntry):
 		#if self.master.validation.validate_charm_and_tran(charm,trans,descr):
 
 			self.master.transports.append({'parent':self.master.parent,
-																			'transport':trans,
+																		 'transport':trans,
 																		 'charm':charm,
 																		 'description':descr})
 
 			self.master.delta_transport.append({'parent': self.master.parent,
-																						'transport':trans,
-																					 'charm':charm,
-																					 'description':descr,
-																					 'delta':'+'})
+																					'transport':trans,
+																					'charm':charm,
+																					'description':descr,
+																					'delta':'+'})
 
 			self.cancel()
 			self.master.change_records.set_display()
@@ -399,22 +482,29 @@ class ChangeRecords(base.ChangeRecords):
 		''' add charm & transport '''
 		self.master.change_entry.new_change()
 
-	def remove(self,event):
-		''' remove charm & transport '''
-		pass
-
 	def set_display(self):
 		''' add items to the parent and charm/transport view '''
 		self.reset_fields()
 		for item in self.master.transports:
 			line = tk.Frame(self.charms)
+			line.id = item['transport']
+			cbtn_sel   = tk.Checkbutton(line,width=1,height=1,anchor='nw',text=' ')
 			lbl_charm = tk.Label(line,anchor='w',width=12,text=item['charm'])
 			lbl_trans = tk.Label(line,anchor='w',width=12,text=item['transport'])
 			lbl_descr = tk.Label(line,anchor='w',text=item['description'])
 			line.grid(row=self.row_index,column=0,pady=(2,0),sticky='w')
-			lbl_charm.grid(row=0,column=0,padx=(5,0))
-			lbl_trans.grid(row=0,column=1)
-			lbl_descr.grid(row=0,column=2,sticky='ew')
+			cbtn_sel.grid(row=0,column=0)#,padx=(5,0)
+			lbl_charm.grid(row=0,column=1)
+			lbl_trans.grid(row=0,column=2)
+			lbl_descr.grid(row=0,column=3,sticky='ew')
+
+			cbtn_sel.sel = tk.StringVar()
+			cbtn_sel.configure(variable=cbtn_sel.sel)
+			cbtn_sel.sel.set(0)
+
+			cbtn_sel.id = {'transport':item['transport'],'charm':item['charm']}
+
+			cbtn_sel.bind('<ButtonRelease-1>',self.selection)
 
 			self.row_index = self.row_index + 1
 
@@ -427,6 +517,54 @@ class ChangeRecords(base.ChangeRecords):
 		for item in self.charms.winfo_children():
 			item.destroy()
 
+	def selection(self,event=None):
+		''' move selected object to the entry view '''
+		changeId = event.widget.id
+
+		if self.sel_row:
+			if self.sel_row.id == changeId:
+				self.sel_row = None
+			else:
+				self.sel_row = event.widget
+		else:
+			self.sel_row = event.widget
+
+		for item in self.charms.winfo_children():
+			for row in item.winfo_children():
+				if '!checkbutton' in str(row):
+					if self.sel_row:
+						if self.sel_row.id != row.id:
+							row.deselect()
+
+	def remove(self,event=None,changeId=None):
+		''' remove '''
+		if not changeId:
+			changeId = self.sel_row.id
+
+		# object table delta updates
+		for change in self.master.transports[:]:
+			 if change['transport'] == changeId['transport']:
+					change['delta'] = '-'
+					if self.master.delta_transport:
+						for n in self.master.delta_transport:
+							if n['transport'] == changeId['transport']:
+								n['delta'] = '-'
+							else:
+								self.master.delta_transport.append(change)
+					else:
+							self.master.delta_transport.append(change)
+					self.master.transports.remove(change)
+
+		[self.master.object_records.remove_obj_from_view(event=None,objectId=obj['objectId']) 
+			for obj in self.master.objects if obj['transport'] == changeId['transport']]
+		[self.master.object_records.remove_obj_from_view(event=None,objectId=obj['objectId']) 
+			for obj in self.master.delta_object if obj['transport'] == changeId['transport']]
+
+		self.set_display()
+		self.update_idletasks()
+		self.set_scroll()
+		self.sel_row = None
+
 
 class ObjectRecords(base.ObjectRecords):
 	''' view for session created objects '''
@@ -434,6 +572,7 @@ class ObjectRecords(base.ObjectRecords):
 	def add_obj_to_view(self,objectId=None):
 		''' add objects to the view '''
 		self.reset_fields()
+		self.master.objects.sort(key=lambda a: a['transport'])
 		for item in self.master.objects:
 			#if item['objectId'] == objectId:
 				# self.main objects
@@ -469,6 +608,7 @@ class ObjectRecords(base.ObjectRecords):
 			lbl_desc.grid(row=0,column=4,sticky='ew')
 
 			line.grid(row=self.row_index,column=0,sticky='w')	
+			#line.pack(side='bottom')
 
 			# increment table row index
 			self.row_index = self.row_index + 1
@@ -500,45 +640,49 @@ class ObjectRecords(base.ObjectRecords):
 		else:
 			self.sel_row = event.widget
 
-		for item in self.main.winfo_children():
+		for item in self.objects.winfo_children():
 			for row in item.winfo_children():
 				if '!checkbutton' in str(row):
 					if self.sel_row:
 						if self.sel_row.id != row.id:
 							row.deselect()
 
-	def remove_obj_from_view(self,objectId):
+	def remove_obj_from_view(self,event=None,objectId=None):
 		''' remove the object and file from the views, update deltas '''
-		objectId = self.sel_row.id
-		if objectId or objectId == 0:
-
-			# object table delta updates
-			for obj in self.master.objects:
-				 if obj['objectId'] == objectId:
-						obj['delta'] = '-'
-						if self.master.delta_object:
-							for n in self.master.delta_object:
-								if n['objectId'] == objectId:
-									n['delta'] = '-'
+		if objectId == 0:
+			objectId = 0
+		elif not objectId:
+			objectId = self.sel_row.id
+		
+		# object table delta updates
+		for obj in self.master.objects[:]:
+			if obj['objectId'] == objectId:
+				obj['delta'] = '-'
+				if self.master.delta_object:
+					for n in self.master.delta_object:
+						if n['objectId'] == objectId:
+							n['delta'] = '-'
 						else:
-								self.master.delta_object.append(obj)
+							self.master.delta_object.append(obj)
+				else:
+					self.master.delta_object.append(obj)
+				self.master.objects.remove(obj)
+		#[self.master.objects.remove(obj) for obj in self.master.objects if obj['objectId'] == objectId]
+		self.master.file_records.remove_file(event=None,objectId=objectId)
 
-			[self.master.objects.remove(obj) for obj in self.master.objects if obj['objectId'] == objectId]
+		#	# file table delta updates
+		#	for file in self.master.files:
+		#		 if file['objectId'] == objectId:
+		#				file['delta'] = '-'
+		#				self.master.delta_files.append(file)
+		#	[self.master.files.remove(file) for file in self.master.files if file['objectId'] == objectId]
+#
+		#self.master.file_records.add_file_to_view()
 
-			# file table delta updates
-			for file in self.master.files:
-				 if file['objectId'] == objectId:
-						file['delta'] = '-'
-						self.master.delta_files.append(file)
-			[self.master.files.remove(file) for file in self.master.files if file['objectId'] == objectId]
-
-		print(self.master.delta_files)
-		print(self.master.delta_object)
-
-		self.master.file_records.add_file_to_view()
 		self.add_obj_to_view()
 		self.update_idletasks()
 		self.set_scroll()
+		self.sel_row = None
 
 	def edit_entry(self,event=None):
 		''' edit entry '''
@@ -873,7 +1017,7 @@ class FileRecords(base.FileRecords):
 		else:
 			self.sel_row = event.widget
 
-		for item in self.main.winfo_children():
+		for item in self.files.winfo_children():
 			for row in item.winfo_children():
 				if '!checkbutton' in str(row):
 					if self.sel_row:
@@ -882,20 +1026,42 @@ class FileRecords(base.FileRecords):
 						else:
 							row.deselect()
 
-	def remove_file(self,objectId=None,event=None):
+	def remove_file(self,event=None,objectId=None):
 		''' remove file '''
-		objectId = self.sel_row.id
-		fileName = self.sel_row.name
 		if objectId or objectId == 0:
 
+			# file table delta updates
+			for file in self.master.files[:]:
+				if file['objectId'] == objectId:
+					self.master.files.remove
+					file['delta'] = '-'
+					if self.master.delta_files:
+						for n in self.master.delta_files:
+							if n['objectId'] == objectId and n['dFileName'] == file['dFileName']:
+								n['delta'] = '-'
+							else:
+								self.master.delta_files.append(file)
+					else:
+						self.master.delta_files.append(file)
+					self.master.files.remove(file)
+
+		else:
+			objectId = self.sel_row.id
+			fileName = self.sel_row.name
 			# remove item from view, then from the master file list
-			for file in self.master.files:
+			for file in self.master.files[:]:
 				if file['objectId'] == objectId and file['dFileName'] == fileName:
 					file['delta'] = '-'
-					self.master.delta_files.append(file)
-			[self.master.files.remove(file) for file in self.master.files if file['objectId'] == objectId and file['dFileName'] == fileName]
-			#[child.destroy() for child in self.main.winfo_children() if child.id == item.id and child.name == item.name]
-
+					if self.master.delta_object:
+						for n in self.master.delta_files:
+							if n['objectId'] == objectId:
+								n['delta'] = '-'
+							else:
+								self.master.delta_files.append(file)
+					else:
+						self.master.delta_object.append(file)
+					self.master.files.remove(file)
+			
 		# update scrollregion
 		self.sel_row = None
 		self.add_file_to_view()
@@ -907,6 +1073,7 @@ class FileRecords(base.FileRecords):
 		for widget in self.files.winfo_children():
 			widget.destroy()
 		self.sel_row = None
+
 
 class MainButtons(base.MainButtons):
 	''' buttons for primary functions like saving log and cancel '''
@@ -924,12 +1091,13 @@ class MainButtons(base.MainButtons):
 		self.master.delta_files.clear()
 		self.master.delta_transport.clear()
 		self.master.delta_charm.clear()
-		self.master.parent_entry.grid_remove()
-		self.master.story_records.grid_remove()
-		self.master.file_records.grid_remove()
-		self.master.main_buttons.grid_remove()
-		self.master.change_records.grid_remove()
-		self.master.object_records.grid_remove()
+		self.master.notes.pack_forget()
+		self.master.parent_entry.pack_forget()
+		self.master.story_records.pack_forget()
+		self.master.file_records.pack_forget()
+		self.master.main_buttons.pack_forget()
+		self.master.change_records.pack_forget()
+		self.master.object_records.pack_forget()
 		self.master.parent_entry.reset_fields()
 		self.master.story_records.reset_fields()
 		self.master.change_records.reset_fields()
@@ -942,8 +1110,8 @@ class MainButtons(base.MainButtons):
 
 	def cancel(self,event=None):
 		''' cancel '''
-		self.master.pack_forget()
 		self.canc_log()
+		self.master.pack_forget()
 		self._root().notes.pack(fill='both',expand=True,pady=(10,0))
 		self._root().screen_id = self._root().notes
 
@@ -1017,8 +1185,8 @@ class MainButtons(base.MainButtons):
 
 		# check if file already exists w/reference to key fields
 		for row in self.master.delta_files:
-			file = row['dFilePath']
 			if row['delta'] == '+':
+				file = row['dFilePath']
 				try:
 					file.touch(exist_ok=False)
 				except(FileExistsError):
@@ -1028,6 +1196,13 @@ class MainButtons(base.MainButtons):
 				# write contents to new file
 				with file.open(mode='w',encoding='utf-8') as ofile:
 					ofile.write(row['dFileCont'])
+			elif row['delta'] == '-':
+				file = pathlib.Path(row['dFilePath'])
+				try:
+					file.unlink()
+				except(FileNotFoundError):
+					alert = messagebox.showerror('Error','Error deleting file!')
+					return
 
 		# change win path to string, remove file content
 		for item in self.master.delta_files:
@@ -1051,8 +1226,28 @@ class MainButtons(base.MainButtons):
 					alert = messagebox.showerror('Error',result)
 					return
 
+		story_add = [list(item.values()) for item in self.master.delta_stories if item['delta'] == '+']
+		#story_mod = [list(item.values()) for item in self.master.delta_stories if item['delta'] == '*']
+		story_del = [list(item.values()) for item in self.master.delta_stories if item['delta'] == '-']
+
+		if story_add:
+			for row in story_add:
+				result = self.master.db_conn.insert_table('story',row[0:3])
+				if result:
+					alert = messagebox.showerror('Error',result)
+					return
+
+		if story_del:
+			for row in story_del:
+				result = self.master.db_conn.delete_table('story','story',row[1])
+				if result:
+					alert = messagebox.showerror('Error',result)
+					return
+
 		# update charm table
 		charm_add = [list(item.values()) for item in self.master.delta_charm if item['delta'] == '+']
+		charm_del = [list(item.values()) for item in self.master.delta_charm if item['delta'] == '-']
+
 		if charm_add:
 			for item in charm_add:
 				result = self.master.db_conn.insert_table('charm',item[0:4])
@@ -1060,12 +1255,27 @@ class MainButtons(base.MainButtons):
 					alert = messagebox.showerror('Error',result)
 					return
 
+		if charm_del:
+			for item in charm_del:
+				result = self.master.db_conn.delete_table('charm','charm',item[2])
+				if result:
+					alert = messagebox.showerror('Error',result)
+					return
+
 		# update transport table
 		transport_add = [list(item.values()) for item in self.master.delta_transport if item['delta'] == '+']
+		transport_del = [list(item.values()) for item in self.master.delta_transport if item['delta'] == '-']
 
 		if transport_add:
 			for item in transport_add:
 				result = self.master.db_conn.insert_table('transport',item[0:4])
+				if result:
+					alert = messagebox.showerror('Error',result)
+					return
+
+		if transport_del:
+			for item in transport_del:
+				result = self.master.db_conn.delete_table('transport','transport',item[1])
 				if result:
 					alert = messagebox.showerror('Error',result)
 					return

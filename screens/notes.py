@@ -40,26 +40,36 @@ class Notes(tk.Frame):
 		self.frNotepad = tk.Frame(self)
 
 		# self.main objects, open & completed work
-		self.work = tk.Frame(self.main)
+		self.open = tk.Frame(self.main,bd=2,relief='groove',bg='lightgray')
 		self.comp = tk.Frame(self.main)
+
+		self.vscroll = tk.Scrollbar(self.open,orient='vertical',bg='light gray')
+		self.canv_open = tk.Canvas(self.open,width=520,height=450,yscrollcommand=self.vscroll.set,bg='light gray')
+		self.open_work = tk.Frame(self.canv_open,bg='light gray')
+		
+		self.canv_open.create_window((0,0),window=self.open_work,anchor='nw',width=525)
 		self.workHeader = tk.Label(self.main,text='Open Work:')
 		self.compHeader = tk.Label(self.main,text='Completed:')
+		self.vscroll.configure(command=self.canv_open.yview)
+		#self.vscroll.pack()
 
 		# self.frNotepad objects
 		self.notepad = tk.Text(self.frNotepad)
 
 		# config
-		self.main.configure(width=1000,borderwidth=2,relief='groove')
-		self.frNotepad.configure(borderwidth=2,relief='groove')
-		self.work.configure(borderwidth=2,relief='groove')
+		#self.open_work.configure(borderwidth=2,relief='groove')
 		self.comp.configure(borderwidth=2,relief='groove')
-		self.notepad.configure(wrap='word',width=50)
+		self.notepad.configure(wrap='word',width=50,bd=2,relief='sunken')
 		# get the contents of the notepad from the database
-		text = self.db_conn.select_table('notepad').fetchone()[0].strip('\n')
-		self.notepad.insert(0.0,text)
+		try:
+			text = self.db_conn.select_table('notepad').fetchone()[0].strip('\n')
+			self.notepad.insert(0.0,text)
+		except(TypeError):
+			pass
 
 		# events
 		self.bind('<Configure>',self.update_notepad)
+		#self.canv_open('<Configure>',self.set_scroll)
 
 		# main pack
 		self.main.pack(side='left',anchor='nw',fill='x')
@@ -67,13 +77,15 @@ class Notes(tk.Frame):
 
 		# self.main pack
 		self.workHeader.pack(side='top',anchor='w',padx=3,pady=(10,0))
-		self.work.pack(side='top',after=self.workHeader,padx=5,pady=5,anchor='nw',fill='x')
-		self.compHeader.pack(side='top',after=self.work,anchor='w',padx=3,pady=(10,0))
-		self.comp.pack(side='top',after=self.compHeader,padx=5,pady=5,anchor='nw',fill='x')
+		self.open.pack(side='top',fill='both',after=self.workHeader)
+		self.canv_open.pack(side='left',anchor='nw',fill='both',padx=5,pady=5)#,)
+		#self.compHeader.pack(side='top',after=self.work,anchor='w',padx=3,pady=(10,0))
+		#self.comp.pack(side='top',after=self.compHeader,padx=5,pady=5,anchor='nw',fill='x')
 
 		# self.frNotepad grid
-		self.notepad.pack(anchor='w',fill='x',expand=True)
+		self.notepad.pack(anchor='w',fill='x',expand=True,padx=(5,10),pady=(35,0))
 
+		self._root().screen_id = self
 		self.display()
 
 	def new_note(self,event=None):
@@ -90,15 +102,18 @@ class Notes(tk.Frame):
 			if item[3] == 'Complete':
 				row = tk.Frame(self.comp) # assign to complete work
 			else:
-				row = tk.Frame(self.work) # assign to open work
+				row = tk.Frame(self.open_work) # assign to open work
 
 			row.id = item[0] # set the row.id as the note_id
-			row.configure(bd=2,relief='groove')
+			row.configure(bd=3,relief='ridge')
+			row._name = '!row'
 
 
 			# row objects
 			options = tk.Frame(row)
+			options._name = '!options'
 			notes = tk.Frame(row) # frames for the optionmenus, notes
+			notes._name = '!name'
 
 			# notesHeader and notes objects
 			notesHeader = tk.Frame(notes)
@@ -163,7 +178,7 @@ class Notes(tk.Frame):
 
 			# self.work grid
 			#row.grid(row=self.index,column=0,padx=(5,10),pady=(5,15),sticky='nsew')
-			row.pack(anchor='w',fill='x')
+			row.pack(anchor='w',fill='x',pady=5)#)
 
 			# row grid
 			pLine.grid(row=0,column=0,sticky='w')
@@ -188,6 +203,19 @@ class Notes(tk.Frame):
 			index = 1
 			self.index = self.index + 1
 
+			self.update_idletasks()
+			self.set_scroll()
+
+	def set_scroll(self,event=None):
+		''' set the scroll region based of the amount of entries '''
+		bbox = self.canv_open.bbox('all')
+		if bbox[3] < int(self.canv_open['height'])+10 and self.vscroll.winfo_exists():
+			self.vscroll.pack_forget()
+		else:
+			if self._root().screen_id == self:
+				self.vscroll.pack(side='right',fill='y',anchor='e')
+		self.canv_open.configure(scrollregion=bbox)
+
 	def delete_note(self,event=None):
 		''' delete note '''
 		id = event.widget.id
@@ -196,7 +224,7 @@ class Notes(tk.Frame):
 
 	def reset_fields(self):
 		''' reset_fields '''
-		for item in self.work.winfo_children():
+		for item in self.open_work.winfo_children():
 			item.destroy()
 		for item in self.comp.winfo_children():
 			item.destroy()
@@ -208,31 +236,29 @@ class Notes(tk.Frame):
 
 	def update_status(self,callback=None,mode=None,event=None):
 		''' update status '''
-		for item in self.main.winfo_children():
-			for row in item.winfo_children():
-				for x in row.winfo_children():
-					for i in x.winfo_children():
-						if '!optionmenu' in str(i):
-							if i['textvariable'] == callback:
-								result = self.db_conn.update_table('note_header',\
-																						'status',i.getvar(i['textvariable']),'noteid',row.id)
+		for x in self.open_work.winfo_children():
+			for i in x.winfo_children():
+				if i._name == '!options':
+					for n in i.winfo_children():
+						if '!optionmenu' in str(n) and n['textvariable'] == callback:
+							result = self.db_conn.update_table('note_header',\
+																				'status',n.getvar(n['textvariable']),'noteid',x.id)
 		self.display()
 
 	def update_system(self,callback=None,mode=None,event=None):
 		''' update system '''
-		for item in self.main.winfo_children():
-			for row in item.winfo_children():
-				for x in row.winfo_children():
-					for i in x.winfo_children():
-						if '!optionmenu' in str(i):
-							if i['textvariable'] == callback:
-								result = self.db_conn.update_table('note_header',\
-																						'system',i.getvar(i['textvariable']),'noteid',row.id)
+		for x in self.open_work.winfo_children():
+			for i in x.winfo_children():
+				if i._name == '!options':
+					for n in i.winfo_children():
+						if '!optionmenu' in str(n) and n['textvariable'] == callback:
+							result = self.db_conn.update_table('note_header',\
+																						'system',n.getvar(n['textvariable']),'noteid',x.id)
 		self.display()
 
 	def update_notepad(self,event=None):
 		''' update notepad '''
-		self._root().after(60000,self.update_notepad)
+		self._root().after(30000,self.update_notepad)
 		result = self.db_conn.update_table('notepad',
 																'notetxt',self.notepad.get(0.0,'end'))
 		result = self.db_conn.update_table('notepad',
